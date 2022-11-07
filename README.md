@@ -3,7 +3,7 @@
 ![alt text](header.png)
 
 
-Archly allows low cost, near 0 slippage trades on uncorrelated or tightly correlated assets. The protocol incentivizes fees instead of liquidity. Liquidity providers (LPs) are given incentives in the form of `token`, the amount received is calculated as follows;
+Archly is a fork of Solidly, that allows low cost, near 0 slippage trades on uncorrelated or tightly correlated assets. The protocol incentivizes fees instead of liquidity. Liquidity providers (LPs) are given incentives in the form of `token`, the amount received is calculated as follows;
 
 * 100% of weekly distribution weighted on votes from ve-token holders
 
@@ -151,8 +151,8 @@ function distribute(address token) external
 
 | Name | Address |
 | :--- | :--- |
-| wTLOS| [0x27Ce41c3cb9AdB5Edb2d8bE253A1c6A64Db8c96d](https://testnet.teloscan.io/address/0x27Ce41c3cb9AdB5Edb2d8bE253A1c6A64Db8c96d#code) |
-| USDT| [0x0000000000000000000000000000000000000000](https://testnet.teloscan.io/address/0x0000000000000000000000000000000000000000#contract) |
+| wTLOS| [0xae85bf723a9e74d6c663dd226996ac1b8d075aa9](https://testnet.teloscan.io/address/0xae85bf723a9e74d6c663dd226996ac1b8d075aa9#code) |
+| sTLOS| [0xa9991e4daa44922d00a78b6d986cdf628d46c4dd](https://testnet.teloscan.io/address/0xa9991e4daa44922d00a78b6d986cdf628d46c4dd#contract) |
 | Arc | [0x0000000000000000000000000000000000000000](https://testnet.teloscan.io/address/0x0000000000000000000000000000000000000000#contract) |
 
 | Name | Address |
