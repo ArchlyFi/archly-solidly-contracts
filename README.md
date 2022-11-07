@@ -145,7 +145,7 @@ function distribute(address token) external
 
 | Name | Address | Qty |
 | :--- | :--- | :--- |
-
+TBD
 
 ### Testnet deployment
 
