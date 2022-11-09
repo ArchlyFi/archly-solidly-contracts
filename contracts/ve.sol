@@ -373,8 +373,8 @@ contract ve is IERC721, IERC721Metadata {
     mapping(uint => bool) public voted;
     address public voter;
 
-    string constant public name = "veNFT";
-    string constant public symbol = "veNFT";
+    string constant public name = "veArc";
+    string constant public symbol = "veArc";
     string constant public version = "1.0.0";
     uint8 constant public decimals = 18;
 
