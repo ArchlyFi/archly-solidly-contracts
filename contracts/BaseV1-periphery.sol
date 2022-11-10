@@ -49,9 +49,10 @@ library Math {
 }
 
 interface IWTLOS {
-    function deposit() external payable returns (uint);
+    function deposit() external payable;
     function transfer(address to, uint value) external returns (bool);
-    function withdraw(uint) external returns (uint);
+    function withdraw(uint) external;
+    function balanceOf(address) external returns (uint);
 }
 
 contract BaseV1Router01 {
