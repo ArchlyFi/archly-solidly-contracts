@@ -21,6 +21,8 @@ interface ve {
     function isApprovedOrOwner(address, uint) external view returns (bool);
     function ownerOf(uint) external view returns (address);
     function transferFrom(address, address, uint) external;
+    function lockVote(uint tokenId) external;
+    function isVoteExpired(uint tokenId) external view returns (bool);
     function attach(uint tokenId) external;
     function detach(uint tokenId) external;
     function voting(uint tokenId) external;
@@ -132,6 +134,7 @@ contract BaseV1Voter {
     }
 
     function _reset(uint _tokenId) internal {
+        require(ve(_ve).isVoteExpired(_tokenId),"Vote Locked!");
         address[] storage _poolVote = poolVote[_tokenId];
         uint _poolVoteCnt = _poolVote.length;
         int256 _totalWeight = 0;
@@ -159,6 +162,7 @@ contract BaseV1Voter {
     }
 
     function poke(uint _tokenId) external {
+        require(ve(_ve).isApprovedOrOwner(msg.sender, _tokenId));
         address[] memory _poolVote = poolVote[_tokenId];
         uint _poolCnt = _poolVote.length;
         int256[] memory _weights = new int256[](_poolCnt);
@@ -172,6 +176,8 @@ contract BaseV1Voter {
 
     function _vote(uint _tokenId, address[] memory _poolVote, int256[] memory _weights) internal {
         _reset(_tokenId);
+        // Lock vote for 1 WEEK
+        ve(_ve).lockVote(_tokenId);
         uint _poolCnt = _poolVote.length;
         int256 _weight = int256(ve(_ve).balanceOfNFT(_tokenId));
         int256 _totalVoteWeight = 0;

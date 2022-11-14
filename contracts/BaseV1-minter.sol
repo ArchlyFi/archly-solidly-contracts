@@ -39,7 +39,7 @@ contract BaseV1Minter {
     uint internal constant emission = 98;
     uint internal constant tail_emission = 2;
     uint internal constant target_base = 100; // 2% per week target emission
-    uint internal constant tail_base = 1000; // 0.2% per week target emission
+    uint internal constant tail_base = 100; // 2% per week target emission
     underlying public immutable _token;
     voter public immutable _voter;
     ve public immutable _ve;
@@ -62,7 +62,7 @@ contract BaseV1Minter {
         _voter = voter(__voter);
         _ve = ve(__ve);
         _ve_dist = ve_dist(__ve_dist);
-        active_period = (block.timestamp + (2*week)) / week * week;
+        active_period = (block.timestamp + week) / week * week;
     }
 
     function initialize(

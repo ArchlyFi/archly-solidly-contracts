@@ -396,6 +396,9 @@ contract ve is IERC721, IERC721Metadata {
     /// @dev Mapping from NFT ID to index of owner
     mapping(uint => uint) internal tokenToOwnerIndex;
 
+    /// @dev Mapping of vote expiry date per NFT ID
+    mapping(uint => uint) internal idToVoteExpiry;
+
     /// @dev Mapping from owner address to mapping of operator addresses.
     mapping(address => mapping(address => bool)) internal ownerToOperators;
 
@@ -523,6 +526,24 @@ contract ve is IERC721, IERC721Metadata {
 
     function isApprovedOrOwner(address _spender, uint _tokenId) external view returns (bool) {
         return _isApprovedOrOwner(_spender, _tokenId);
+    }
+
+    /// @dev Returns true if NFT is unlocked, false if locked in vote.
+    /// @param _tokenId The identifier for an NFT.
+    function isVoteExpired(uint _tokenId) external view returns (bool) {
+        return _isVoteExpired(_tokenId);
+    }
+    
+    /// @dev Returns true if NFT is unlocked, false if locked in vote.
+    /// @param _tokenId The identifier for an NFT.
+    function _isVoteExpired(uint _tokenId) internal view returns (bool) {
+        return idToVoteExpiry[_tokenId] < block.timestamp;
+    }
+
+    /// @dev Returns remaining vote lock for an NFT.
+    /// @param _tokenId The identifier for an NFT.
+    function voteExpiry(uint _tokenId) external view returns (uint) {
+        return idToVoteExpiry[_tokenId];
     }
 
     /// @dev Add a NFT to an index mapping to a given address
@@ -944,6 +965,14 @@ contract ve is IERC721, IERC721Metadata {
         emit Supply(supply_before, supply_before + _value);
     }
 
+    /// @notice Locks tokenID vote for 1 week.
+    /// @param _tokenId The identifier for an NFT.
+    function lockVote(uint _tokenId) external {
+        require(msg.sender == voter);
+        require(_isVoteExpired(_tokenId),"Vote Locked!");
+        idToVoteExpiry[_tokenId] = block.timestamp + WEEK;
+    }
+
     function setVoter(address _voter) external {
         require(msg.sender == voter);
         voter = _voter;
@@ -1337,5 +1366,15 @@ contract ve is IERC721, IERC721Metadata {
         // Remove token
         _removeTokenFrom(msg.sender, _tokenId);
         emit Transfer(owner, address(0), _tokenId);
+    }
+
+    function tokensOfOwner(address _owner) external view returns (uint256[] memory) {
+        uint256 tokenCount = _balance(_owner);
+        uint256[] memory tokensId = new uint256[](tokenCount);
+
+        for (uint256 i = 0; i < tokenCount; i++) {
+            tokensId[i] = ownerToNFTokenIdList[_owner][i];
+        }
+        return tokensId;
     }
 }
