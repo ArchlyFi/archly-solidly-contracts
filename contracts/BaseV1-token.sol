@@ -3,7 +3,7 @@ pragma solidity 0.8.11;
 
 contract BaseV1 {
 
-    string public constant symbol = "ARC";
+    string public constant symbol = "Arc";
     string public constant name = "Archly";
     uint8 public constant decimals = 18;
     uint public totalSupply = 0;
