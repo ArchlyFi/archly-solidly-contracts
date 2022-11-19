@@ -39,10 +39,23 @@ contract BaseV1 {
         emit Transfer(address(0x0), _to, _amount);
         return true;
     }
+    
+    function _burn(address _from, uint _amount) internal returns (bool) {
+        balanceOf[_from] -= _amount;
+        totalSupply -= _amount;
+        emit Transfer(_from, address(0x0), _amount);
+        return true;
+    }
 
     function _transfer(address _from, address _to, uint _value) internal returns (bool) {
         balanceOf[_from] -= _value;
-        balanceOf[_to] += _value;
+        
+        if(_to == address(0x0)) {
+            totalSupply -= _value;
+        } else {
+            balanceOf[_to] += _value;
+        }
+        
         emit Transfer(_from, _to, _value);
         return true;
     }
@@ -62,6 +75,12 @@ contract BaseV1 {
     function mint(address account, uint amount) external returns (bool) {
         require(msg.sender == minter);
         _mint(account, amount);
+        return true;
+    }
+    
+    function burn(uint amount) external returns (bool) {
+        require(balanceOf[msg.sender] >= amount);
+        _burn(msg.sender, amount);
         return true;
     }
 }

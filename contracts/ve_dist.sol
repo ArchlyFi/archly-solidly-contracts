@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.11;
 
+import './interfaces/IERC20.sol';
+import './interfaces/IVotingEscrow.sol';
+import './libraries/Math.sol';
+
 /*
 
 @title Curve Fee Distribution modified for ve(3,3) emissions
@@ -8,43 +12,6 @@ pragma solidity 0.8.11;
 @license MIT
 
 */
-
-interface erc20 {
-    function totalSupply() external view returns (uint256);
-    function transfer(address recipient, uint amount) external returns (bool);
-    function decimals() external view returns (uint8);
-    function symbol() external view returns (string memory);
-    function balanceOf(address) external view returns (uint);
-    function transferFrom(address sender, address recipient, uint amount) external returns (bool);
-    function approve(address spender, uint value) external returns (bool);
-}
-
-library Math {
-    function min(uint a, uint b) internal pure returns (uint) {
-        return a < b ? a : b;
-    }
-    function max(uint a, uint b) internal pure returns (uint) {
-        return a >= b ? a : b;
-    }
-}
-
-interface VotingEscrow {
-
-    struct Point {
-        int128 bias;
-        int128 slope; // # -dweight / dt
-        uint256 ts;
-        uint256 blk; // block
-    }
-
-    function user_point_epoch(uint tokenId) external view returns (uint);
-    function epoch() external view returns (uint);
-    function user_point_history(uint tokenId, uint loc) external view returns (Point memory);
-    function point_history(uint loc) external view returns (Point memory);
-    function checkpoint() external;
-    function deposit_for(uint tokenId, uint value) external;
-    function token() external view returns (address);
-}
 
 contract ve_dist {
 
@@ -83,11 +50,11 @@ contract ve_dist {
         start_time = _t;
         last_token_time = _t;
         time_cursor = _t;
-        address _token = VotingEscrow(_voting_escrow).token();
+        address _token = IVotingEscrow(_voting_escrow).token();
         token = _token;
         voting_escrow = _voting_escrow;
         depositor = msg.sender;
-        erc20(_token).approve(_voting_escrow, type(uint).max);
+        IERC20(_token).approve(_voting_escrow, type(uint).max);
     }
 
     function timestamp() external view returns (uint) {
@@ -95,7 +62,7 @@ contract ve_dist {
     }
 
     function _checkpoint_token() internal {
-        uint token_balance = erc20(token).balanceOf(address(this));
+        uint token_balance = IERC20(token).balanceOf(address(this));
         uint to_distribute = token_balance - token_last_balance;
         token_last_balance = token_balance;
 
@@ -134,11 +101,11 @@ contract ve_dist {
 
     function _find_timestamp_epoch(address ve, uint _timestamp) internal view returns (uint) {
         uint _min = 0;
-        uint _max = VotingEscrow(ve).epoch();
+        uint _max = IVotingEscrow(ve).epoch();
         for (uint i = 0; i < 128; i++) {
             if (_min >= _max) break;
             uint _mid = (_min + _max + 2) / 2;
-            VotingEscrow.Point memory pt = VotingEscrow(ve).point_history(_mid);
+            IVotingEscrow.Point memory pt = IVotingEscrow(ve).point_history(_mid);
             if (pt.ts <= _timestamp) {
                 _min = _mid;
             } else {
@@ -154,7 +121,7 @@ contract ve_dist {
         for (uint i = 0; i < 128; i++) {
             if (_min >= _max) break;
             uint _mid = (_min + _max + 2) / 2;
-            VotingEscrow.Point memory pt = VotingEscrow(ve).user_point_history(tokenId, _mid);
+            IVotingEscrow.Point memory pt = IVotingEscrow(ve).user_point_history(tokenId, _mid);
             if (pt.ts <= _timestamp) {
                 _min = _mid;
             } else {
@@ -166,9 +133,9 @@ contract ve_dist {
 
     function ve_for_at(uint _tokenId, uint _timestamp) external view returns (uint) {
         address ve = voting_escrow;
-        uint max_user_epoch = VotingEscrow(ve).user_point_epoch(_tokenId);
+        uint max_user_epoch = IVotingEscrow(ve).user_point_epoch(_tokenId);
         uint epoch = _find_timestamp_user_epoch(ve, _tokenId, _timestamp, max_user_epoch);
-        VotingEscrow.Point memory pt = VotingEscrow(ve).user_point_history(_tokenId, epoch);
+        IVotingEscrow.Point memory pt = IVotingEscrow(ve).user_point_history(_tokenId, epoch);
         return Math.max(uint(int256(pt.bias - pt.slope * (int128(int256(_timestamp - pt.ts))))), 0);
     }
 
@@ -176,14 +143,14 @@ contract ve_dist {
         address ve = voting_escrow;
         uint t = time_cursor;
         uint rounded_timestamp = block.timestamp / WEEK * WEEK;
-        VotingEscrow(ve).checkpoint();
+        IVotingEscrow(ve).checkpoint();
 
         for (uint i = 0; i < 20; i++) {
             if (t > rounded_timestamp) {
                 break;
             } else {
                 uint epoch = _find_timestamp_epoch(ve, t);
-                VotingEscrow.Point memory pt = VotingEscrow(ve).point_history(epoch);
+                IVotingEscrow.Point memory pt = IVotingEscrow(ve).point_history(epoch);
                 int128 dt = 0;
                 if (t > pt.ts) {
                     dt = int128(int256(t - pt.ts));
@@ -203,7 +170,7 @@ contract ve_dist {
         uint user_epoch = 0;
         uint to_distribute = 0;
 
-        uint max_user_epoch = VotingEscrow(ve).user_point_epoch(_tokenId);
+        uint max_user_epoch = IVotingEscrow(ve).user_point_epoch(_tokenId);
         uint _start_time = start_time;
 
         if (max_user_epoch == 0) return 0;
@@ -217,13 +184,13 @@ contract ve_dist {
 
         if (user_epoch == 0) user_epoch = 1;
 
-        VotingEscrow.Point memory user_point = VotingEscrow(ve).user_point_history(_tokenId, user_epoch);
+        IVotingEscrow.Point memory user_point = IVotingEscrow(ve).user_point_history(_tokenId, user_epoch);
 
         if (week_cursor == 0) week_cursor = (user_point.ts + WEEK - 1) / WEEK * WEEK;
         if (week_cursor >= last_token_time) return 0;
         if (week_cursor < _start_time) week_cursor = _start_time;
 
-        VotingEscrow.Point memory old_user_point;
+        IVotingEscrow.Point memory old_user_point;
 
         for (uint i = 0; i < 50; i++) {
             if (week_cursor >= _last_token_time) break;
@@ -232,9 +199,9 @@ contract ve_dist {
                 user_epoch += 1;
                 old_user_point = user_point;
                 if (user_epoch > max_user_epoch) {
-                    user_point = VotingEscrow.Point(0,0,0,0);
+                    user_point = IVotingEscrow.Point(0,0,0,0);
                 } else {
-                    user_point = VotingEscrow(ve).user_point_history(_tokenId, user_epoch);
+                    user_point = IVotingEscrow(ve).user_point_history(_tokenId, user_epoch);
                 }
             } else {
                 int128 dt = int128(int256(week_cursor - old_user_point.ts));
@@ -260,7 +227,7 @@ contract ve_dist {
         uint user_epoch = 0;
         uint to_distribute = 0;
 
-        uint max_user_epoch = VotingEscrow(ve).user_point_epoch(_tokenId);
+        uint max_user_epoch = IVotingEscrow(ve).user_point_epoch(_tokenId);
         uint _start_time = start_time;
 
         if (max_user_epoch == 0) return 0;
@@ -274,13 +241,13 @@ contract ve_dist {
 
         if (user_epoch == 0) user_epoch = 1;
 
-        VotingEscrow.Point memory user_point = VotingEscrow(ve).user_point_history(_tokenId, user_epoch);
+        IVotingEscrow.Point memory user_point = IVotingEscrow(ve).user_point_history(_tokenId, user_epoch);
 
         if (week_cursor == 0) week_cursor = (user_point.ts + WEEK - 1) / WEEK * WEEK;
         if (week_cursor >= last_token_time) return 0;
         if (week_cursor < _start_time) week_cursor = _start_time;
 
-        VotingEscrow.Point memory old_user_point;
+        IVotingEscrow.Point memory old_user_point;
 
         for (uint i = 0; i < 50; i++) {
             if (week_cursor >= _last_token_time) break;
@@ -289,9 +256,9 @@ contract ve_dist {
                 user_epoch += 1;
                 old_user_point = user_point;
                 if (user_epoch > max_user_epoch) {
-                    user_point = VotingEscrow.Point(0,0,0,0);
+                    user_point = IVotingEscrow.Point(0,0,0,0);
                 } else {
-                    user_point = VotingEscrow(ve).user_point_history(_tokenId, user_epoch);
+                    user_point = IVotingEscrow(ve).user_point_history(_tokenId, user_epoch);
                 }
             } else {
                 int128 dt = int128(int256(week_cursor - old_user_point.ts));
@@ -318,7 +285,7 @@ contract ve_dist {
         _last_token_time = _last_token_time / WEEK * WEEK;
         uint amount = _claim(_tokenId, voting_escrow, _last_token_time);
         if (amount != 0) {
-            VotingEscrow(voting_escrow).deposit_for(_tokenId, amount);
+            IVotingEscrow(voting_escrow).deposit_for(_tokenId, amount);
             token_last_balance -= amount;
         }
         return amount;
@@ -336,7 +303,7 @@ contract ve_dist {
             if (_tokenId == 0) break;
             uint amount = _claim(_tokenId, _voting_escrow, _last_token_time);
             if (amount != 0) {
-                VotingEscrow(_voting_escrow).deposit_for(_tokenId, amount);
+                IVotingEscrow(_voting_escrow).deposit_for(_tokenId, amount);
                 total += amount;
             }
         }

@@ -1,59 +1,11 @@
 // SPDX-License-Identifier: MIT
-
 pragma solidity 0.8.11;
 
-interface IBaseV1Factory {
-    function allPairsLength() external view returns (uint);
-    function isPair(address pair) external view returns (bool);
-    function pairCodeHash() external pure returns (bytes32);
-    function getPair(address tokenA, address token, bool stable) external view returns (address);
-    function createPair(address tokenA, address tokenB, bool stable) external returns (address pair);
-}
-
-interface IBaseV1Pair {
-    function transferFrom(address src, address dst, uint amount) external returns (bool);
-    function permit(address owner, address spender, uint value, uint deadline, uint8 v, bytes32 r, bytes32 s) external;
-    function swap(uint amount0Out, uint amount1Out, address to, bytes calldata data) external;
-    function burn(address to) external returns (uint amount0, uint amount1);
-    function mint(address to) external returns (uint liquidity);
-    function getReserves() external view returns (uint112 _reserve0, uint112 _reserve1, uint32 _blockTimestampLast);
-    function getAmountOut(uint, address) external view returns (uint);
-}
-
-interface erc20 {
-    function totalSupply() external view returns (uint256);
-    function transfer(address recipient, uint amount) external returns (bool);
-    function decimals() external view returns (uint8);
-    function symbol() external view returns (string memory);
-    function balanceOf(address) external view returns (uint);
-    function transferFrom(address sender, address recipient, uint amount) external returns (bool);
-    function approve(address spender, uint value) external returns (bool);
-}
-
-library Math {
-    function min(uint a, uint b) internal pure returns (uint) {
-        return a < b ? a : b;
-    }
-    function sqrt(uint y) internal pure returns (uint z) {
-        if (y > 3) {
-            z = y;
-            uint x = y / 2 + 1;
-            while (x < z) {
-                z = x;
-                x = (y / x + x) / 2;
-            }
-        } else if (y != 0) {
-            z = 1;
-        }
-    }
-}
-
-interface IWTLOS {
-    function deposit() external payable;
-    function transfer(address to, uint value) external returns (bool);
-    function withdraw(uint) external;
-    function balanceOf(address) external returns (uint);
-}
+import './interfaces/IBaseV1Factory.sol';
+import './interfaces/IBaseV1Pair.sol';
+import './interfaces/IERC20.sol';
+import './interfaces/IWTLOS.sol';
+import './libraries/Math.sol';
 
 contract BaseV1Router01 {
 
@@ -158,7 +110,7 @@ contract BaseV1Router01 {
         (uint reserveA, uint reserveB) = (0,0);
         uint _totalSupply = 0;
         if (_pair != address(0)) {
-            _totalSupply = erc20(_pair).totalSupply();
+            _totalSupply = IERC20(_pair).totalSupply();
             (reserveA, reserveB) = getReserves(tokenA, tokenB, stable);
         }
         if (reserveA == 0 && reserveB == 0) {
@@ -192,7 +144,7 @@ contract BaseV1Router01 {
         }
 
         (uint reserveA, uint reserveB) = getReserves(tokenA, tokenB, stable);
-        uint _totalSupply = erc20(_pair).totalSupply();
+        uint _totalSupply = IERC20(_pair).totalSupply();
 
         amountA = liquidity * reserveA / _totalSupply; // using balances ensures pro-rata distribution
         amountB = liquidity * reserveB / _totalSupply; // using balances ensures pro-rata distribution
@@ -456,14 +408,14 @@ contract BaseV1Router01 {
     function _safeTransfer(address token, address to, uint256 value) internal {
         require(token.code.length > 0);
         (bool success, bytes memory data) =
-        token.call(abi.encodeWithSelector(erc20.transfer.selector, to, value));
+        token.call(abi.encodeWithSelector(IERC20.transfer.selector, to, value));
         require(success && (data.length == 0 || abi.decode(data, (bool))));
     }
 
     function _safeTransferFrom(address token, address from, address to, uint256 value) internal {
         require(token.code.length > 0);
         (bool success, bytes memory data) =
-        token.call(abi.encodeWithSelector(erc20.transferFrom.selector, from, to, value));
+        token.call(abi.encodeWithSelector(IERC20.transferFrom.selector, from, to, value));
         require(success && (data.length == 0 || abi.decode(data, (bool))));
     }
 }

@@ -1,35 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.11;
 
-library Math {
-    function max(uint a, uint b) internal pure returns (uint) {
-        return a >= b ? a : b;
-    }
-}
-
-interface ve {
-    function token() external view returns (address);
-    function totalSupply() external view returns (uint);
-    function create_lock_for(uint, uint, address) external returns (uint);
-    function transferFrom(address, address, uint) external;
-}
-
-interface underlying {
-    function approve(address spender, uint value) external returns (bool);
-    function mint(address, uint) external;
-    function totalSupply() external view returns (uint);
-    function balanceOf(address) external view returns (uint);
-    function transfer(address, uint) external returns (bool);
-}
-
-interface voter {
-    function notifyRewardAmount(uint amount) external;
-}
-
-interface ve_dist {
-    function checkpoint_token() external;
-    function checkpoint_total_supply() external;
-}
+import './libraries/Math.sol';
+import './interfaces/IVotingEscrow.sol';
+import './interfaces/IUnderlying.sol';
+import './interfaces/IBaseV1Voter.sol';
+import './interfaces/IVotingEscrowDistributor.sol';
 
 // codifies the minting rules as per ve(3,3), abstracted from the token to support any token that allows minting
 
@@ -40,15 +16,19 @@ contract BaseV1Minter {
     uint internal constant tail_emission = 2;
     uint internal constant target_base = 100; // 2% per week target emission
     uint internal constant tail_base = 100; // 2% per week target emission
-    underlying public immutable _token;
-    voter public immutable _voter;
-    ve public immutable _ve;
-    ve_dist public immutable _ve_dist;
+    IUnderlying public immutable _token;
+    IBaseV1Voter public immutable _voter;
+    IVotingEscrow public immutable _ve;
+    IVotingEscrowDistributor public immutable _ve_dist;
     uint public weekly = 20000000e18;
     uint public active_period;
     uint internal constant lock = 86400 * 7 * 52 * 4;
 
     address internal initializer;
+    address public team;
+    address public pendingTeam;
+    uint public teamRate;
+    uint public constant MAX_TEAM_RATE = 50; // 50 bps = 0.05%
 
     event Mint(address indexed sender, uint weekly, uint circulating_supply, uint circulating_emission);
 
@@ -58,11 +38,13 @@ contract BaseV1Minter {
         address __ve_dist // the distribution system that ensures users aren't diluted
     ) {
         initializer = msg.sender;
-        _token = underlying(ve(__ve).token());
-        _voter = voter(__voter);
-        _ve = ve(__ve);
-        _ve_dist = ve_dist(__ve_dist);
-        active_period = (block.timestamp + week) / week * week;
+        team = msg.sender;
+        teamRate = 30; // 30 bps = 0.03%
+        _token = IUnderlying(IVotingEscrow(__ve).token());
+        _voter = IBaseV1Voter(__voter);
+        _ve = IVotingEscrow(__ve);
+        _ve_dist = IVotingEscrowDistributor(__ve_dist);
+        active_period = ((block.timestamp + (2 * week)) / week) * week;
     }
 
     function initialize(
@@ -77,7 +59,23 @@ contract BaseV1Minter {
             _ve.create_lock_for(amounts[i], lock, claimants[i]);
         }
         initializer = address(0);
-        active_period = (block.timestamp + week) / week * week;
+        active_period = (block.timestamp / week) * week;
+    }
+    
+    function setTeam(address _team) external {
+        require(msg.sender == team, "not team");
+        pendingTeam = _team;
+    }
+
+    function acceptTeam() external {
+        require(msg.sender == pendingTeam, "not pending team");
+        team = pendingTeam;
+    }
+
+    function setTeamRate(uint _teamRate) external {
+        require(msg.sender == team, "not team");
+        require(_teamRate <= MAX_TEAM_RATE, "rate too high");
+        teamRate = _teamRate;
     }
 
     // calculate circulating supply as total token supply - locked supply
@@ -114,12 +112,14 @@ contract BaseV1Minter {
             weekly = weekly_emission();
 
             uint _growth = calculate_growth(weekly);
-            uint _required = _growth + weekly;
+            uint _teamEmissions = (teamRate * (_growth + weekly)) / 1000;
+            uint _required = _growth + weekly + _teamEmissions;
             uint _balanceOf = _token.balanceOf(address(this));
             if (_balanceOf < _required) {
-                _token.mint(address(this), _required-_balanceOf);
+                _token.mint(address(this), _required - _balanceOf);
             }
 
+            require(_token.transfer(team, _teamEmissions));
             require(_token.transfer(address(_ve_dist), _growth));
             _ve_dist.checkpoint_token(); // checkpoint token balance that was just minted in ve_dist
             _ve_dist.checkpoint_total_supply(); // checkpoint supply
