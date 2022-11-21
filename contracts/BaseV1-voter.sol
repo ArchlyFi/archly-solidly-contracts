@@ -34,7 +34,6 @@ contract BaseV1Voter {
     mapping(uint => mapping(address => uint256)) public votes; // nft => gauge => votes
     mapping(uint => address[]) public gaugeVote; // nft => gauge
     mapping(uint => uint) public usedWeights;  // nft => total voting weight of user
-    mapping(uint => uint) public lastVote; // nft id => timestamp of last vote 
     mapping(address => bool) public isGauge;
     mapping(address => bool) public isLive; // gauge => status (live or not)
 
@@ -244,15 +243,9 @@ contract BaseV1Voter {
         _vote(tokenId, _gaugeVote, _weights);
     }
 
-    function whitelist(address _token, uint _tokenId) public checkPermissionMode {
+    function whitelist(address _token) public checkPermissionMode {
         if(msg.sender != admin) {
-            if (_tokenId > 0) {
-                require(msg.sender == IVotingEscrow(_ve).ownerOf(_tokenId));
-                require(IVotingEscrow(_ve).balanceOfNFT(_tokenId) > listing_fee());
-                IVotingEscrow(_ve).burn(_tokenId);
-            } else {
-                _safeTransferFrom(base, msg.sender, address(0), listing_fee());
-            }
+            _safeTransferFrom(base, msg.sender, address(0), listing_fee());
         }
 
         _whitelist(_token);
