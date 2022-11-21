@@ -22,6 +22,7 @@ contract BaseV1Voter {
     uint internal constant DURATION = 7 days; // rewards are released over 7 days
     address public minter;
     address public admin;
+    bool public permissionMode;
 
     uint public totalWeight; // total voting weight
 
@@ -56,11 +57,19 @@ contract BaseV1Voter {
     event Attach(address indexed owner, address indexed gauge, uint tokenId);
     event Detach(address indexed owner, address indexed gauge, uint tokenId);
     event Whitelisted(address indexed whitelister, address indexed token);
+    event Delisted(address indexed delister, address indexed token);
     event GaugeKilled(address indexed gauge);
     event GaugeRevived(address indexed gauge);
 
     modifier onlyAdmin() {
         require(msg.sender == admin, "Voter: only admin");
+        _;
+    }
+    
+    modifier checkPermissionMode() {
+        if(permissionMode) {
+            require(msg.sender == admin);
+        }
         _;
     }
 
@@ -79,6 +88,7 @@ contract BaseV1Voter {
         bribeFactory = _bribes;
         minter = msg.sender;
         admin = msg.sender;
+        permissionMode = false;
     }
 
     // simple re-entrancy check
@@ -102,6 +112,16 @@ contract BaseV1Voter {
     function setAdmin(address _admin) external onlyAdmin {
         require(_admin != address(0), "zero address");
         admin = _admin;
+    }
+    
+    function enablePermissionMode() external onlyAdmin {
+        require(!permissionMode, "Permission Mode Enabled");
+        permissionMode = true;
+    }
+
+    function disablePermissionMode() external onlyAdmin {
+        require(permissionMode, "Permission Mode Disabled");
+        permissionMode = false;
     }
 
     function setReward(address _gauge, address _token, bool _status) external onlyAdmin {
@@ -224,7 +244,7 @@ contract BaseV1Voter {
         _vote(tokenId, _gaugeVote, _weights);
     }
 
-    function whitelist(address _token, uint _tokenId) public {
+    function whitelist(address _token, uint _tokenId) public checkPermissionMode {
         if(msg.sender != admin) {
             if (_tokenId > 0) {
                 require(msg.sender == IVotingEscrow(_ve).ownerOf(_tokenId));
@@ -242,6 +262,12 @@ contract BaseV1Voter {
         require(!isWhitelisted[_token]);
         isWhitelisted[_token] = true;
         emit Whitelisted(msg.sender, _token);
+    }
+    
+    function delist(address _token) public onlyAdmin {
+        require(isWhitelisted[_token], "!whitelisted");
+        isWhitelisted[_token] = false;
+        emit Delisted(msg.sender, _token);
     }
 
     function createGauge(address _pair) external returns (address) {
