@@ -19,6 +19,7 @@ interface IVotingEscrow {
     function token() external view returns (address);
     function user_point_history__ts(uint tokenId, uint idx) external view returns (uint);
     function locked__end(uint _tokenId) external view returns (uint);
+    function locked__amount(uint _tokenId) external view returns (uint);
     function approve(address spender, uint tokenId) external;
     function balanceOfNFT(uint) external view returns (uint);
     function isApprovedOrOwner(address, uint) external view returns (bool);

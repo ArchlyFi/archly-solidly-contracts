@@ -353,8 +353,8 @@ contract BaseV1Pair {
         require(amount0In > 0 || amount1In > 0, 'IIA'); // BaseV1: INSUFFICIENT_INPUT_AMOUNT
         { // scope for reserve{0,1}Adjusted, avoids stack too deep errors
         (address _token0, address _token1) = (token0, token1);
-        if (amount0In > 0) _update0(amount0In / 10000); // accrue fees for token0 and move them out of pool
-        if (amount1In > 0) _update1(amount1In / 10000); // accrue fees for token1 and move them out of pool
+        if (amount0In > 0) _update0(amount0In * IBaseV1Factory(factory).getFee(stable) / 10000); // accrue fees for token0 and move them out of pool
+        if (amount1In > 0) _update1(amount1In * IBaseV1Factory(factory).getFee(stable) / 10000); // accrue fees for token1 and move them out of pool
         _balance0 = IERC20(_token0).balanceOf(address(this)); // since we removed tokens, we need to reconfirm balances, can also simply use previous balance - amountIn/ 10000, but doing balanceOf again as safety check
         _balance1 = IERC20(_token1).balanceOf(address(this));
         // The curve, either x3y+y3x for stable pools, or x*y for volatile pools
@@ -411,7 +411,7 @@ contract BaseV1Pair {
 
     function getAmountOut(uint amountIn, address tokenIn) external view returns (uint) {
         (uint _reserve0, uint _reserve1) = (reserve0, reserve1);
-        amountIn -= amountIn / 10000; // remove fee from amount received
+        amountIn -= amountIn * IBaseV1Factory(factory).getFee(stable) / 10000; // remove fee from amount received
         return _getAmountOut(amountIn, tokenIn, _reserve0, _reserve1);
     }
 

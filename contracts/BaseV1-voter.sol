@@ -225,12 +225,14 @@ contract BaseV1Voter {
     }
 
     function whitelist(address _token, uint _tokenId) public {
-        if (_tokenId > 0) {
-            require(msg.sender == IVotingEscrow(_ve).ownerOf(_tokenId));
-            require(IVotingEscrow(_ve).balanceOfNFT(_tokenId) > listing_fee());
-            IVotingEscrow(_ve).burn(_tokenId);
-        } else {
-            _safeTransferFrom(base, msg.sender, address(0), listing_fee());
+        if(msg.sender != admin) {
+            if (_tokenId > 0) {
+                require(msg.sender == IVotingEscrow(_ve).ownerOf(_tokenId));
+                require(IVotingEscrow(_ve).balanceOfNFT(_tokenId) > listing_fee());
+                IVotingEscrow(_ve).burn(_tokenId);
+            } else {
+                _safeTransferFrom(base, msg.sender, address(0), listing_fee());
+            }
         }
 
         _whitelist(_token);

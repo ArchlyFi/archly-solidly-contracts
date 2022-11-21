@@ -192,6 +192,12 @@ contract ve is IERC721, IERC721Metadata {
     function locked__end(uint _tokenId) external view returns (uint) {
         return locked[_tokenId].end;
     }
+    
+    /// @notice Get `_tokenId`'s locked amount
+    /// @param _tokenId User NFT
+    function locked__amount(uint _tokenId) external view returns (uint) {
+        return uint(int256(locked[_tokenId].amount));
+    }
 
     /// @dev Returns the number of NFTs owned by `_owner`.
     ///      Throws if `_owner` is the zero address. NFTs assigned to the zero address are considered invalid.

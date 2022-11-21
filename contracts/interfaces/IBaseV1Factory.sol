@@ -12,4 +12,5 @@ interface IBaseV1Factory {
     function acceptPauser() external;
     function setPauser(address _pauser) external;
     function isPaused() external view returns (bool);
+    function getFee(bool _stable) external view returns(uint256);
 }

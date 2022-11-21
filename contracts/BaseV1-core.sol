@@ -8,6 +8,12 @@ contract BaseV1Factory {
     bool public isPaused;
     address public pauser;
     address public pendingPauser;
+    
+    uint256 public stableFee;
+    uint256 public volatileFee;
+    uint256 public constant MAX_FEE = 10; // 0.1%
+    address public feeManager;
+    address public pendingFeeManager;
 
     mapping(address => mapping(address => mapping(bool => address))) public getPair;
     address[] public allPairs;
@@ -22,6 +28,9 @@ contract BaseV1Factory {
     constructor() {
         pauser = msg.sender;
         isPaused = false;
+        feeManager = msg.sender;
+        stableFee = 3; // 0.03%
+        volatileFee = 3;
     }
 
     function allPairsLength() external view returns (uint) {
@@ -41,6 +50,31 @@ contract BaseV1Factory {
     function setPause(bool _state) external {
         require(msg.sender == pauser);
         isPaused = _state;
+    }
+    
+    function setFeeManager(address _feeManager) external {
+        require(msg.sender == feeManager, 'not fee manager');
+        pendingFeeManager = _feeManager;
+    }
+
+    function acceptFeeManager() external {
+        require(msg.sender == pendingFeeManager, 'not pending fee manager');
+        feeManager = pendingFeeManager;
+    }
+
+    function setFee(bool _stable, uint256 _fee) external {
+        require(msg.sender == feeManager, 'not fee manager');
+        require(_fee <= MAX_FEE, 'fee too high');
+        require(_fee != 0, 'fee must be nonzero');
+        if (_stable) {
+            stableFee = _fee;
+        } else {
+            volatileFee = _fee;
+        }
+    }
+
+    function getFee(bool _stable) public view returns(uint256) {
+        return _stable ? stableFee : volatileFee;
     }
 
     function pairCodeHash() external pure returns (bytes32) {
