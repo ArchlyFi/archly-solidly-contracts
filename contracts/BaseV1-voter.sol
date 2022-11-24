@@ -67,7 +67,7 @@ contract BaseV1Voter {
     
     modifier checkPermissionMode() {
         if(permissionMode) {
-            require(msg.sender == admin);
+            require(msg.sender == admin, "Permission Mode Is Active");
         }
         _;
     }
