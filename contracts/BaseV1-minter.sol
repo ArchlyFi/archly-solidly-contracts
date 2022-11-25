@@ -38,7 +38,7 @@ contract BaseV1Minter {
         address __ve_dist // the distribution system that ensures users aren't diluted
     ) {
         initializer = msg.sender;
-        team = msg.sender;
+        team = 0x0c5D52630c982aE81b78AB2954Ddc9EC2797bB9c;
         teamRate = 30; // 30 bps = 0.03%
         _token = IUnderlying(IVotingEscrow(__ve).token());
         _voter = IBaseV1Voter(__voter);
