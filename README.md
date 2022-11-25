@@ -153,29 +153,41 @@ TBD
 | :--- | :--- |
 | wTLOS| [0xae85bf723a9e74d6c663dd226996ac1b8d075aa9](https://testnet.teloscan.io/address/0xae85bf723a9e74d6c663dd226996ac1b8d075aa9#code) |
 | Arc | [0x6a921C4b3f4Dfb4bD278EBA5978B0381b74ea8fa](https://testnet.teloscan.io/address/0x6a921C4b3f4Dfb4bD278EBA5978B0381b74ea8fa#contract) |
-| BaseV1Factory | [0xCEE3e7189913335D83c41aDfC3089B2B17a6a740](https://testnet.teloscan.io/address/0xCEE3e7189913335D83c41aDfC3089B2B17a6a740#contract) |
-| BaseV1BribeFactory | [0x538a55F9d2e1D128B378A6Ff822F073cb86111f1](https://testnet.teloscan.io/address/0x538a55F9d2e1D128B378A6Ff822F073cb86111f1#contract) |
-| BaseV1GaugeFactory | [0x0eDc4d37F3A8B30065Ceede737C60e315A95f56e](https://testnet.teloscan.io/address/0x0eDc4d37F3A8B30065Ceede737C60e315A95f56e#contract) |
-| BaseV1Router01 | [0x45A27E9Dc65143Eb0aa2249D4a1B1c5464373e29](https://testnet.teloscan.io/address/0x45A27E9Dc65143Eb0aa2249D4a1B1c5464373e29#contract) |
-| BaseV1Voter | [0xf6339700bb26638923dbDF7527Fe125cEae3AE70](https://testnet.teloscan.io/address/0xf6339700bb26638923dbDF7527Fe125cEae3AE70#contract) |
 | veArc | [0x3EBfCEF3F3C0268Fa9AfB14CD461E2CC11ce0640](https://testnet.teloscan.io/address/0x3EBfCEF3F3C0268Fa9AfB14CD461E2CC11ce0640#contract) |
 | veArc-dist | [0x4b71F90c5d1968c21D3dc70A59268908A20A24Ef](https://testnet.teloscan.io/address/0x4b71F90c5d1968c21D3dc70A59268908A20A24Ef#contract) |
+| BaseV1Factory | [0xCEE3e7189913335D83c41aDfC3089B2B17a6a740](https://testnet.teloscan.io/address/0xCEE3e7189913335D83c41aDfC3089B2B17a6a740#contract) |
+| BaseV1Router01 | [0x45A27E9Dc65143Eb0aa2249D4a1B1c5464373e29](https://testnet.teloscan.io/address/0x45A27E9Dc65143Eb0aa2249D4a1B1c5464373e29#contract) |
+| BaseV1GaugeFactory | [0x0eDc4d37F3A8B30065Ceede737C60e315A95f56e](https://testnet.teloscan.io/address/0x0eDc4d37F3A8B30065Ceede737C60e315A95f56e#contract) |
+| BaseV1BribeFactory | [0x538a55F9d2e1D128B378A6Ff822F073cb86111f1](https://testnet.teloscan.io/address/0x538a55F9d2e1D128B378A6Ff822F073cb86111f1#contract) |
+| BaseV1Voter | [0xf6339700bb26638923dbDF7527Fe125cEae3AE70](https://testnet.teloscan.io/address/0xf6339700bb26638923dbDF7527Fe125cEae3AE70#contract) |
 | BaseV1Minter | [0xc310e3d746DE609a06dB2a51eAAD58Ecd00dc84c](https://testnet.teloscan.io/address/0xc310e3d746DE609a06dB2a51eAAD58Ecd00dc84c#contract) |
 
 ### Mainnet
 
+deploy BaseV1Factory 0x39fdd4Fec9b41e9AcD339a7cf75250108D32906c
+deploy BaseV1Router01 0x7BF5247c2d8cC4Ad7b588898B1ED3594815Ca3f9
+deploy BaseV1 0xa84df7aFbcbCC1106834a5feD9453bd1219B1fb5
+deploy Multicall 0xC107779F19812c49B46924a1B6DbD84Ae69Aa00B
+deploy contracts/ve.sol:ve 0x5680b3059b860d07A33B7A43d03D2E4dEdb226BB
+deploy contracts/ve_dist.sol:ve_dist 0x9763cD8DA9e1ED99490893A8bcd64e5e87E7cd3C
+deploy BaseV1GaugeFactory 0x3D5eA100C38c0Af9f5d94105EA4E160AeE6DC668
+deploy BaseV1BribeFactory 0x11ca072a392D92ca63976CD9c1dc38de1FE578ee
+deploy BaseV1Voter 0xd9742c670eEE8001d965964E05793c42c588B657
+deploy archly_library 0xab6B383613e5F25836c04fCC35a4606F281339F7
+deploy BaseV1Minter 0xdB6db572DA4be59656f87Ee5711D8334e1f9b0E9
+
 | Name | Address |
 | :--- | :--- |
 | wTLOS| [0xd102ce6a4db07d247fcc28f366a623df0938ca9e](https://www.teloscan.io/address/0xd102ce6a4db07d247fcc28f366a623df0938ca9e#code) |
-| Arc | [0x0000000000000000000000000000000000000000](https://www.teloscan.io/address/0x0000000000000000000000000000000000000000#contract) |
-| BaseV1Factory | [0x0000000000000000000000000000000000000000](https://www.teloscan.io/address/0x0000000000000000000000000000000000000000#contract) |
-| BaseV1BribeFactory | [0x0000000000000000000000000000000000000000](https://www.teloscan.io/address/0x0000000000000000000000000000000000000000#contract) |
-| BaseV1GaugesFactory | [0x0000000000000000000000000000000000000000](https://www.teloscan.io/address/0x0000000000000000000000000000000000000000#contract) |
-| BaseV1Router01 | [0x0000000000000000000000000000000000000000](https://www.teloscan.io/address/0x0000000000000000000000000000000000000000#contract) |
-| BaseV1Voter | [0x0000000000000000000000000000000000000000](https://www.teloscan.io/address/0x0000000000000000000000000000000000000000#contract) |
-| veArc | [0x0000000000000000000000000000000000000000](https://www.teloscan.io/address/0x0000000000000000000000000000000000000000#contract) |
-| veArc-dist | [0x0000000000000000000000000000000000000000](https://www.teloscan.io/address/0x0000000000000000000000000000000000000000#contract) |
-| BaseV1Minter | [0x0000000000000000000000000000000000000000](https://www.teloscan.io/address/0x0000000000000000000000000000000000000000#contract) |
+| Arc | [0xa84df7aFbcbCC1106834a5feD9453bd1219B1fb5](https://www.teloscan.io/address/0xa84df7aFbcbCC1106834a5feD9453bd1219B1fb5#contract) |
+| veArc | [0x5680b3059b860d07A33B7A43d03D2E4dEdb226BB](https://www.teloscan.io/address/0x5680b3059b860d07A33B7A43d03D2E4dEdb226BB#contract) |
+| veArc-dist | [0x9763cD8DA9e1ED99490893A8bcd64e5e87E7cd3C](https://www.teloscan.io/address/0x9763cD8DA9e1ED99490893A8bcd64e5e87E7cd3C#contract) |
+| BaseV1Factory | [0x39fdd4Fec9b41e9AcD339a7cf75250108D32906c](https://www.teloscan.io/address/0x39fdd4Fec9b41e9AcD339a7cf75250108D32906c#contract) |
+| BaseV1Router01 | [0x7BF5247c2d8cC4Ad7b588898B1ED3594815Ca3f9](https://www.teloscan.io/address/0x7BF5247c2d8cC4Ad7b588898B1ED3594815Ca3f9#contract) |
+| BaseV1GaugeFactory | [0x3D5eA100C38c0Af9f5d94105EA4E160AeE6DC668](https://www.teloscan.io/address/0x3D5eA100C38c0Af9f5d94105EA4E160AeE6DC668#contract) |
+| BaseV1BribeFactory | [0x11ca072a392D92ca63976CD9c1dc38de1FE578ee](https://www.teloscan.io/address/0x11ca072a392D92ca63976CD9c1dc38de1FE578ee#contract) |
+| BaseV1Voter | [0xd9742c670eEE8001d965964E05793c42c588B657](https://www.teloscan.io/address/0xd9742c670eEE8001d965964E05793c42c588B657#contract) |
+| BaseV1Minter | [0xdB6db572DA4be59656f87Ee5711D8334e1f9b0E9](https://www.teloscan.io/address/0xdB6db572DA4be59656f87Ee5711D8334e1f9b0E9#contract) |
 
 ## Security
 
