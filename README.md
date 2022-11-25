@@ -141,12 +141,6 @@ function vote(address[] calldata _poolVote, uint[] calldata _weights) external
 function distribute(address token) external
 ```
 
-### veNFT distribution recipients
-
-| Name | Address | Qty |
-| :--- | :--- | :--- |
-TBD
-
 ### Testnet deployment
 
 | Name | Address |
@@ -163,18 +157,6 @@ TBD
 | BaseV1Minter | [0xc310e3d746DE609a06dB2a51eAAD58Ecd00dc84c](https://testnet.teloscan.io/address/0xc310e3d746DE609a06dB2a51eAAD58Ecd00dc84c#contract) |
 
 ### Mainnet
-
-deploy BaseV1Factory 0x39fdd4Fec9b41e9AcD339a7cf75250108D32906c
-deploy BaseV1Router01 0x7BF5247c2d8cC4Ad7b588898B1ED3594815Ca3f9
-deploy BaseV1 0xa84df7aFbcbCC1106834a5feD9453bd1219B1fb5
-deploy Multicall 0xC107779F19812c49B46924a1B6DbD84Ae69Aa00B
-deploy contracts/ve.sol:ve 0x5680b3059b860d07A33B7A43d03D2E4dEdb226BB
-deploy contracts/ve_dist.sol:ve_dist 0x9763cD8DA9e1ED99490893A8bcd64e5e87E7cd3C
-deploy BaseV1GaugeFactory 0x3D5eA100C38c0Af9f5d94105EA4E160AeE6DC668
-deploy BaseV1BribeFactory 0x11ca072a392D92ca63976CD9c1dc38de1FE578ee
-deploy BaseV1Voter 0xd9742c670eEE8001d965964E05793c42c588B657
-deploy archly_library 0xab6B383613e5F25836c04fCC35a4606F281339F7
-deploy BaseV1Minter 0xdB6db572DA4be59656f87Ee5711D8334e1f9b0E9
 
 | Name | Address |
 | :--- | :--- |
