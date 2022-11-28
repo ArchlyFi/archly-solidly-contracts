@@ -7,7 +7,7 @@ import './interfaces/IERC20.sol';
 import './interfaces/IWTLOS.sol';
 import './libraries/Math.sol';
 
-contract BaseV1Router01 {
+contract Router {
 
     struct route {
         address from;
@@ -16,7 +16,7 @@ contract BaseV1Router01 {
     }
 
     address public immutable factory;
-    IWTLOS public immutable wtlos;
+    IWETH public immutable weth;
     uint internal constant MINIMUM_LIQUIDITY = 10**3;
     bytes32 immutable pairCodeHash;
 
@@ -25,14 +25,19 @@ contract BaseV1Router01 {
         _;
     }
 
-    constructor(address _factory, address _wtlos) {
+    constructor(address _factory, address _weth) {
+        require(
+            _factory != address(0) &&
+            _weth != address(0),
+            "Router: zero address provided in constructor"
+        );
         factory = _factory;
-        pairCodeHash = IBaseV1Factory(_factory).pairCodeHash();
-        wtlos = IWTLOS(_wtlos);
+        pairCodeHash = ISwapFactory(_factory).pairCodeHash();
+        weth = IWETH(_weth);
     }
 
     receive() external payable {
-        assert(msg.sender == address(wtlos)); // only accept ETH via fallback from the WETH contract
+        assert(msg.sender == address(weth)); // only accept ETH via fallback from the WETH contract
     }
 
     function sortTokens(address tokenA, address tokenB) public pure returns (address token0, address token1) {
@@ -62,7 +67,7 @@ contract BaseV1Router01 {
     // fetches and sorts the reserves for a pair
     function getReserves(address tokenA, address tokenB, bool stable) public view returns (uint reserveA, uint reserveB) {
         (address token0,) = sortTokens(tokenA, tokenB);
-        (uint reserve0, uint reserve1,) = IBaseV1Pair(pairFor(tokenA, tokenB, stable)).getReserves();
+        (uint reserve0, uint reserve1,) = ISwapPair(pairFor(tokenA, tokenB, stable)).getReserves();
         (reserveA, reserveB) = tokenA == token0 ? (reserve0, reserve1) : (reserve1, reserve0);
     }
 
@@ -71,12 +76,12 @@ contract BaseV1Router01 {
         address pair = pairFor(tokenIn, tokenOut, true);
         uint amountStable;
         uint amountVolatile;
-        if (IBaseV1Factory(factory).isPair(pair)) {
-            amountStable = IBaseV1Pair(pair).getAmountOut(amountIn, tokenIn);
+        if (ISwapFactory(factory).isPair(pair)) {
+            amountStable = ISwapPair(pair).getAmountOut(amountIn, tokenIn);
         }
         pair = pairFor(tokenIn, tokenOut, false);
-        if (IBaseV1Factory(factory).isPair(pair)) {
-            amountVolatile = IBaseV1Pair(pair).getAmountOut(amountIn, tokenIn);
+        if (ISwapFactory(factory).isPair(pair)) {
+            amountVolatile = ISwapPair(pair).getAmountOut(amountIn, tokenIn);
         }
         return amountStable > amountVolatile ? (amountStable, true) : (amountVolatile, false);
     }
@@ -88,14 +93,14 @@ contract BaseV1Router01 {
         amounts[0] = amountIn;
         for (uint i = 0; i < routes.length; i++) {
             address pair = pairFor(routes[i].from, routes[i].to, routes[i].stable);
-            if (IBaseV1Factory(factory).isPair(pair)) {
-                amounts[i+1] = IBaseV1Pair(pair).getAmountOut(amounts[i], routes[i].from);
+            if (ISwapFactory(factory).isPair(pair)) {
+                amounts[i+1] = ISwapPair(pair).getAmountOut(amounts[i], routes[i].from);
             }
         }
     }
 
     function isPair(address pair) external view returns (bool) {
-        return IBaseV1Factory(factory).isPair(pair);
+        return ISwapFactory(factory).isPair(pair);
     }
 
     function quoteAddLiquidity(
@@ -106,7 +111,7 @@ contract BaseV1Router01 {
         uint amountBDesired
     ) external view returns (uint amountA, uint amountB, uint liquidity) {
         // create the pair if it doesn't exist yet
-        address _pair = IBaseV1Factory(factory).getPair(tokenA, tokenB, stable);
+        address _pair = ISwapFactory(factory).getPair(tokenA, tokenB, stable);
         (uint reserveA, uint reserveB) = (0,0);
         uint _totalSupply = 0;
         if (_pair != address(0)) {
@@ -137,7 +142,7 @@ contract BaseV1Router01 {
         uint liquidity
     ) external view returns (uint amountA, uint amountB) {
         // create the pair if it doesn't exist yet
-        address _pair = IBaseV1Factory(factory).getPair(tokenA, tokenB, stable);
+        address _pair = ISwapFactory(factory).getPair(tokenA, tokenB, stable);
 
         if (_pair == address(0)) {
             return (0,0);
@@ -163,9 +168,9 @@ contract BaseV1Router01 {
         require(amountADesired >= amountAMin);
         require(amountBDesired >= amountBMin);
         // create the pair if it doesn't exist yet
-        address _pair = IBaseV1Factory(factory).getPair(tokenA, tokenB, stable);
+        address _pair = ISwapFactory(factory).getPair(tokenA, tokenB, stable);
         if (_pair == address(0)) {
-            _pair = IBaseV1Factory(factory).createPair(tokenA, tokenB, stable);
+            _pair = ISwapFactory(factory).createPair(tokenA, tokenB, stable);
         }
         (uint reserveA, uint reserveB) = getReserves(tokenA, tokenB, stable);
         if (reserveA == 0 && reserveB == 0) {
@@ -199,34 +204,34 @@ contract BaseV1Router01 {
         address pair = pairFor(tokenA, tokenB, stable);
         _safeTransferFrom(tokenA, msg.sender, pair, amountA);
         _safeTransferFrom(tokenB, msg.sender, pair, amountB);
-        liquidity = IBaseV1Pair(pair).mint(to);
+        liquidity = ISwapPair(pair).mint(to);
     }
 
-    function addLiquidityTLOS(
+    function addLiquidityETH(
         address token,
         bool stable,
         uint amountTokenDesired,
         uint amountTokenMin,
-        uint amountTLOSMin,
+        uint amountETHMin,
         address to,
         uint deadline
-    ) external payable ensure(deadline) returns (uint amountToken, uint amountTLOS, uint liquidity) {
-        (amountToken, amountTLOS) = _addLiquidity(
+    ) external payable ensure(deadline) returns (uint amountToken, uint amountETH, uint liquidity) {
+        (amountToken, amountETH) = _addLiquidity(
             token,
-            address(wtlos),
+            address(weth),
             stable,
             amountTokenDesired,
             msg.value,
             amountTokenMin,
-            amountTLOSMin
+            amountETHMin
         );
-        address pair = pairFor(token, address(wtlos), stable);
+        address pair = pairFor(token, address(weth), stable);
         _safeTransferFrom(token, msg.sender, pair, amountToken);
-        wtlos.deposit{value: amountTLOS}();
-        assert(wtlos.transfer(pair, amountTLOS));
-        liquidity = IBaseV1Pair(pair).mint(to);
+        weth.deposit{value: amountETH}();
+        assert(weth.transfer(pair, amountETH));
+        liquidity = ISwapPair(pair).mint(to);
         // refund dust eth, if any
-        if (msg.value > amountTLOS) _safeTransferTLOS(msg.sender, msg.value - amountTLOS);
+        if (msg.value > amountETH) _safeTransferETH(msg.sender, msg.value - amountETH);
     }
 
     // **** REMOVE LIQUIDITY ****
@@ -241,72 +246,72 @@ contract BaseV1Router01 {
         uint deadline
     ) public ensure(deadline) returns (uint amountA, uint amountB) {
         address pair = pairFor(tokenA, tokenB, stable);
-        require(IBaseV1Pair(pair).transferFrom(msg.sender, pair, liquidity)); // send liquidity to pair
-        (uint amount0, uint amount1) = IBaseV1Pair(pair).burn(to);
+        require(ISwapPair(pair).transferFrom(msg.sender, pair, liquidity)); // send liquidity to pair
+        (uint amount0, uint amount1) = ISwapPair(pair).burn(to);
         (address token0,) = sortTokens(tokenA, tokenB);
         (amountA, amountB) = tokenA == token0 ? (amount0, amount1) : (amount1, amount0);
         require(amountA >= amountAMin, 'BaseV1Router: INSUFFICIENT_A_AMOUNT');
         require(amountB >= amountBMin, 'BaseV1Router: INSUFFICIENT_B_AMOUNT');
     }
 
-    function removeLiquidityTLOS(
+    function removeLiquidityETH(
         address token,
         bool stable,
         uint liquidity,
         uint amountTokenMin,
-        uint amountTLOSMin,
+        uint amountETHMin,
         address to,
         uint deadline
-    ) public ensure(deadline) returns (uint amountToken, uint amountTLOS) {
-        (amountToken, amountTLOS) = removeLiquidity(
+    ) public ensure(deadline) returns (uint amountToken, uint amountETH) {
+        (amountToken, amountETH) = removeLiquidity(
             token,
-            address(wtlos),
+            address(weth),
             stable,
             liquidity,
             amountTokenMin,
-            amountTLOSMin,
+            amountETHMin,
             address(this),
             deadline
         );
         _safeTransfer(token, to, amountToken);
-        wtlos.withdraw(amountTLOS);
-        _safeTransferTLOS(to, amountTLOS);
+        weth.withdraw(amountETH);
+        _safeTransferETH(to, amountETH);
     }
 
-    function removeLiquidityWithPermit(
-        address tokenA,
-        address tokenB,
-        bool stable,
-        uint liquidity,
-        uint amountAMin,
-        uint amountBMin,
-        address to,
-        uint deadline,
-        bool approveMax, uint8 v, bytes32 r, bytes32 s
-    ) external returns (uint amountA, uint amountB) {
-        address pair = pairFor(tokenA, tokenB, stable);
-        {
-            uint value = approveMax ? type(uint).max : liquidity;
-            IBaseV1Pair(pair).permit(msg.sender, address(this), value, deadline, v, r, s);
-        }
+    // function removeLiquidityWithPermit(
+    //     address tokenA,
+    //     address tokenB,
+    //     bool stable,
+    //     uint liquidity,
+    //     uint amountAMin,
+    //     uint amountBMin,
+    //     address to,
+    //     uint deadline,
+    //     bool approveMax, uint8 v, bytes32 r, bytes32 s
+    // ) external returns (uint amountA, uint amountB) {
+    //     address pair = pairFor(tokenA, tokenB, stable);
+    //     {
+    //         uint value = approveMax ? type(uint).max : liquidity;
+    //         ISwapPair(pair).permit(msg.sender, address(this), value, deadline, v, r, s);
+    //     }
 
-        (amountA, amountB) = removeLiquidity(tokenA, tokenB, stable, liquidity, amountAMin, amountBMin, to, deadline);
-    }
+    //     (amountA, amountB) = removeLiquidity(tokenA, tokenB, stable, liquidity, amountAMin, amountBMin, to, deadline);
+    // }
 
-    function removeLiquidityTLOSWithPermit(
+    function removeLiquidityETHWithPermit(
         address token,
         bool stable,
         uint liquidity,
         uint amountTokenMin,
-        uint amountTLOSMin,
+        uint amountETHMin,
         address to,
         uint deadline,
         bool approveMax, uint8 v, bytes32 r, bytes32 s
-    ) external returns (uint amountToken, uint amountTLOS) {
-        address pair = pairFor(token, address(wtlos), stable);
+    ) external returns (uint amountToken, uint amountETH) {
+        address pair = pairFor(token, address(weth), stable);
         uint value = approveMax ? type(uint).max : liquidity;
-        IBaseV1Pair(pair).permit(msg.sender, address(this), value, deadline, v, r, s);
-        (amountToken, amountTLOS) = removeLiquidityTLOS(token, stable, liquidity, amountTokenMin, amountTLOSMin, to, deadline);
+        ISwapPair(pair).permit(msg.sender, address(this), value, deadline, v, r, s);
+        (amountToken, amountETH) = removeLiquidityETH(token, stable, liquidity, amountTokenMin, amountETHMin, to, deadline);
     }
 
     // **** SWAP ****
@@ -317,7 +322,7 @@ contract BaseV1Router01 {
             uint amountOut = amounts[i + 1];
             (uint amount0Out, uint amount1Out) = routes[i].from == token0 ? (uint(0), amountOut) : (amountOut, uint(0));
             address to = i < routes.length - 1 ? pairFor(routes[i+1].from, routes[i+1].to, routes[i+1].stable) : _to;
-            IBaseV1Pair(pairFor(routes[i].from, routes[i].to, routes[i].stable)).swap(
+            ISwapPair(pairFor(routes[i].from, routes[i].to, routes[i].stable)).swap(
                 amount0Out, amount1Out, to, new bytes(0)
             );
         }
@@ -336,6 +341,15 @@ contract BaseV1Router01 {
         routes[0].from = tokenFrom;
         routes[0].to = tokenTo;
         routes[0].stable = stable;
+        require(
+            ISwapFactory(factory).isPair(
+                pairFor(
+                    routes[0].from,
+                    routes[0].to,
+                    routes[0].stable
+                )
+            ), "Pair has not been created"
+        );
         amounts = getAmountsOut(amountIn, routes);
         require(amounts[amounts.length - 1] >= amountOutMin, 'BaseV1Router: INSUFFICIENT_OUTPUT_AMOUNT');
         _safeTransferFrom(
@@ -351,6 +365,15 @@ contract BaseV1Router01 {
         address to,
         uint deadline
     ) external ensure(deadline) returns (uint[] memory amounts) {
+        require(
+            ISwapFactory(factory).isPair(
+                pairFor(
+                    routes[0].from,
+                    routes[0].to,
+                    routes[0].stable
+                )
+            ), "Pair has not been created"
+        );
         amounts = getAmountsOut(amountIn, routes);
         require(amounts[amounts.length - 1] >= amountOutMin, 'BaseV1Router: INSUFFICIENT_OUTPUT_AMOUNT');
         _safeTransferFrom(
@@ -359,34 +382,52 @@ contract BaseV1Router01 {
         _swap(amounts, routes, to);
     }
 
-    function swapExactTLOSForTokens(uint amountOutMin, route[] calldata routes, address to, uint deadline)
+    function swapExactETHForTokens(uint amountOutMin, route[] calldata routes, address to, uint deadline)
     external
     payable
     ensure(deadline)
     returns (uint[] memory amounts)
     {
-        require(routes[0].from == address(wtlos), 'BaseV1Router: INVALID_PATH');
+        require(
+            ISwapFactory(factory).isPair(
+                pairFor(
+                    routes[0].from,
+                    routes[0].to,
+                    routes[0].stable
+                )
+            ), "Pair has not been created"
+        );
+        require(routes[0].from == address(weth), 'BaseV1Router: INVALID_PATH');
         amounts = getAmountsOut(msg.value, routes);
         require(amounts[amounts.length - 1] >= amountOutMin, 'BaseV1Router: INSUFFICIENT_OUTPUT_AMOUNT');
-        wtlos.deposit{value: amounts[0]}();
-        assert(wtlos.transfer(pairFor(routes[0].from, routes[0].to, routes[0].stable), amounts[0]));
+        weth.deposit{value: amounts[0]}();
+        assert(weth.transfer(pairFor(routes[0].from, routes[0].to, routes[0].stable), amounts[0]));
         _swap(amounts, routes, to);
     }
 
-    function swapExactTokensForTLOS(uint amountIn, uint amountOutMin, route[] calldata routes, address to, uint deadline)
+    function swapExactTokensForETH(uint amountIn, uint amountOutMin, route[] calldata routes, address to, uint deadline)
     external
     ensure(deadline)
     returns (uint[] memory amounts)
     {
-        require(routes[routes.length - 1].to == address(wtlos), 'BaseV1Router: INVALID_PATH');
+        require(
+            ISwapFactory(factory).isPair(
+                pairFor(
+                    routes[0].from,
+                    routes[0].to,
+                    routes[0].stable
+                )
+            ), "Pair has not been created"
+        );
+        require(routes[routes.length - 1].to == address(weth), 'BaseV1Router: INVALID_PATH');
         amounts = getAmountsOut(amountIn, routes);
         require(amounts[amounts.length - 1] >= amountOutMin, 'BaseV1Router: INSUFFICIENT_OUTPUT_AMOUNT');
         _safeTransferFrom(
             routes[0].from, msg.sender, pairFor(routes[0].from, routes[0].to, routes[0].stable), amounts[0]
         );
         _swap(amounts, routes, address(this));
-        wtlos.withdraw(amounts[amounts.length - 1]);
-        _safeTransferTLOS(to, amounts[amounts.length - 1]);
+        weth.withdraw(amounts[amounts.length - 1]);
+        _safeTransferETH(to, amounts[amounts.length - 1]);
     }
 
     function UNSAFE_swapExactTokensForTokens(
@@ -395,12 +436,21 @@ contract BaseV1Router01 {
         address to,
         uint deadline
     ) external ensure(deadline) returns (uint[] memory) {
+        require(
+            ISwapFactory(factory).isPair(
+                pairFor(
+                    routes[0].from,
+                    routes[0].to,
+                    routes[0].stable
+                )
+            ), "Pair has not been created"
+        );
         _safeTransferFrom(routes[0].from, msg.sender, pairFor(routes[0].from, routes[0].to, routes[0].stable), amounts[0]);
         _swap(amounts, routes, to);
         return amounts;
     }
 
-    function _safeTransferTLOS(address to, uint value) internal {
+    function _safeTransferETH(address to, uint value) internal {
         (bool success,) = to.call{value:value}(new bytes(0));
         require(success, 'TransferHelper: ETH_TRANSFER_FAILED');
     }

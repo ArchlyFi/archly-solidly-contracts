@@ -13,7 +13,7 @@ import './libraries/Math.sol';
 
 */
 
-contract ve_dist {
+contract VotingDist {
 
     event CheckpointToken(
         uint time,
@@ -46,6 +46,10 @@ contract ve_dist {
     address public depositor;
 
     constructor(address _voting_escrow) {
+        require(
+            _voting_escrow != address(0),
+            "VotingDist: zero address provided in constructor"
+        );
         uint _t = block.timestamp / WEEK * WEEK;
         start_time = _t;
         last_token_time = _t;

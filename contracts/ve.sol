@@ -45,7 +45,7 @@ struct LockedBalance {
     uint end;
 }
 
-contract ve is IERC721, IERC721Metadata {
+contract VotingEscrow is IERC721, IERC721Metadata {
     enum DepositType {
         DEPOSIT_FOR_TYPE,
         CREATE_LOCK_TYPE,
@@ -64,11 +64,10 @@ contract ve is IERC721, IERC721Metadata {
     );
     event Withdraw(address indexed provider, uint tokenId, uint value, uint ts);
     event Supply(uint prevSupply, uint supply);
-    event Burn(address indexed provider, uint tokenId, uint value, uint ts);
 
     uint internal constant WEEK = 1 weeks;
-    uint internal constant MAXTIME = 4 * 365 * 86400;
-    int128 internal constant iMAXTIME = 4 * 365 * 86400;
+    uint internal constant MAXTIME = 116_367_840; // 3.69 years
+    int128 internal constant iMAXTIME = 116_367_840; // 3.69 years
     uint internal constant MULTIPLIER = 1 ether;
 
     address immutable public token;
@@ -88,9 +87,8 @@ contract ve is IERC721, IERC721Metadata {
     mapping(uint => bool) public voted;
     address public voter;
 
-    string constant public name = "veArc";
-    string constant public symbol = "veArc";
-    string constant public version = "1.0.0";
+    string constant public name = "veNFT";
+    string constant public symbol = "veNFT";
     uint8 constant public decimals = 18;
 
     /// @dev Current count of token
@@ -110,9 +108,6 @@ contract ve is IERC721, IERC721Metadata {
 
     /// @dev Mapping from NFT ID to index of owner
     mapping(uint => uint) internal tokenToOwnerIndex;
-
-    /// @dev Mapping of vote expiry date per NFT ID
-    mapping(uint => uint) internal idToVoteExpiry;
 
     /// @dev Mapping from owner address to mapping of operator addresses.
     mapping(address => mapping(address => bool)) internal ownerToOperators;
@@ -192,12 +187,6 @@ contract ve is IERC721, IERC721Metadata {
     function locked__end(uint _tokenId) external view returns (uint) {
         return locked[_tokenId].end;
     }
-    
-    /// @notice Get `_tokenId`'s locked amount
-    /// @param _tokenId User NFT
-    function locked__amount(uint _tokenId) external view returns (uint) {
-        return uint(int256(locked[_tokenId].amount));
-    }
 
     /// @dev Returns the number of NFTs owned by `_owner`.
     ///      Throws if `_owner` is the zero address. NFTs assigned to the zero address are considered invalid.
@@ -251,24 +240,6 @@ contract ve is IERC721, IERC721Metadata {
 
     function isApprovedOrOwner(address _spender, uint _tokenId) external view returns (bool) {
         return _isApprovedOrOwner(_spender, _tokenId);
-    }
-
-    /// @dev Returns true if NFT is unlocked, false if locked in vote.
-    /// @param _tokenId The identifier for an NFT.
-    function isVoteExpired(uint _tokenId) external view returns (bool) {
-        return _isVoteExpired(_tokenId);
-    }
-    
-    /// @dev Returns true if NFT is unlocked, false if locked in vote.
-    /// @param _tokenId The identifier for an NFT.
-    function _isVoteExpired(uint _tokenId) internal view returns (bool) {
-        return idToVoteExpiry[_tokenId] < block.timestamp;
-    }
-
-    /// @dev Returns remaining vote lock for an NFT.
-    /// @param _tokenId The identifier for an NFT.
-    function voteExpiry(uint _tokenId) external view returns (uint) {
-        return idToVoteExpiry[_tokenId];
     }
 
     /// @dev Add a NFT to an index mapping to a given address
@@ -509,6 +480,7 @@ contract ve is IERC721, IERC721Metadata {
             );
             require(retval == IERC721Receiver.onERC721Received.selector);
         }
+        //require(_checkOnERC721Received(address(0), _to, _tokenId, ''), "Contract can't handle ERC721");
 
         emit Transfer(address(0), _to, _tokenId);
         return true;
@@ -696,14 +668,6 @@ contract ve is IERC721, IERC721Metadata {
         emit Supply(supply_before, supply_before + _value);
     }
 
-    /// @notice Locks tokenID vote for 1 week.
-    /// @param _tokenId The identifier for an NFT.
-    function lockVote(uint _tokenId) external {
-        require(msg.sender == voter);
-        require(_isVoteExpired(_tokenId),"Vote Locked!");
-        idToVoteExpiry[_tokenId] = block.timestamp + WEEK;
-    }
-
     function setVoter(address _voter) external {
         require(msg.sender == voter);
         voter = _voter;
@@ -778,7 +742,7 @@ contract ve is IERC721, IERC721Metadata {
 
         require(_value > 0); // dev: need non-zero value
         require(unlock_time > block.timestamp, 'Can only lock until time in the future');
-        require(unlock_time <= block.timestamp + MAXTIME, 'Voting lock can be 4 years max');
+        require(unlock_time <= block.timestamp + MAXTIME, 'Voting lock can be 3.69 years max');
 
         ++tokenId;
         uint _tokenId = tokenId;
@@ -828,7 +792,7 @@ contract ve is IERC721, IERC721Metadata {
         require(_locked.end > block.timestamp, 'Lock expired');
         require(_locked.amount > 0, 'Nothing is locked');
         require(unlock_time > _locked.end, 'Can only increase lock duration');
-        require(unlock_time <= block.timestamp + MAXTIME, 'Voting lock can be 4 years max');
+        require(unlock_time <= block.timestamp + MAXTIME, 'Voting lock can be 3.69 years max');
 
         _deposit_for(_tokenId, 0, unlock_time, _locked, DepositType.INCREASE_UNLOCK_TIME);
     }
@@ -1061,7 +1025,7 @@ contract ve is IERC721, IERC721Metadata {
         output = string(abi.encodePacked(output, "locked_end ", toString(_locked_end), '</text><text x="10" y="80" class="base">'));
         output = string(abi.encodePacked(output, "value ", toString(_value), '</text></svg>'));
 
-        string memory json = Base64.encode(bytes(string(abi.encodePacked('{"name": "lock #', toString(_tokenId), '", "description": "Archly locks, can be used to boost gauge yields, vote on token emission, and receive bribes", "image": "data:image/svg+xml;base64,', Base64.encode(bytes(output)), '"}'))));
+        string memory json = Base64.encode(bytes(string(abi.encodePacked('{"name": "lock #', toString(_tokenId), '", "description": "3xcalibur locks, can be used to boost gauge yields, vote on token emission, and receive bribes", "image": "data:image/svg+xml;base64,', Base64.encode(bytes(output)), '"}'))));
         output = string(abi.encodePacked('data:application/json;base64,', json));
     }
 
@@ -1097,43 +1061,5 @@ contract ve is IERC721, IERC721Metadata {
         // Remove token
         _removeTokenFrom(owner, _tokenId);
         emit Transfer(owner, address(0), _tokenId);
-    }
-
-    function tokensOfOwner(address _owner) external view returns (uint256[] memory) {
-        uint256 tokenCount = _balance(_owner);
-        uint256[] memory tokensId = new uint256[](tokenCount);
-
-        for (uint256 i = 0; i < tokenCount; i++) {
-            tokensId[i] = ownerToNFTokenIdList[_owner][i];
-        }
-        return tokensId;
-    }
-    
-    /// @notice Burn all tokens for `_tokenId`
-    /// @dev Only possible if not vote locked
-    function burn(uint _tokenId) external nonreentrant {
-        assert(_isApprovedOrOwner(msg.sender, _tokenId));
-        require(attachments[_tokenId] == 0 && !voted[_tokenId], "attached");
-        require(_isVoteExpired(_tokenId), "Vote Locked!");
-
-        LockedBalance memory _locked = locked[_tokenId];
-        uint value = uint(int256(_locked.amount));
-
-        locked[_tokenId] = LockedBalance(0,0);
-        uint supply_before = supply;
-        supply = supply_before - value;
-
-        // old_locked can have either expired <= timestamp or zero end
-        // _locked has only 0 end
-        // Both can have >= 0 amount
-        _checkpoint(_tokenId, _locked, LockedBalance(0,0));
-
-        assert(IERC20(token).transfer(address(0), value));
-
-        // Burn the NFT
-        _burn(_tokenId);
-
-        emit Burn(msg.sender, _tokenId, value, block.timestamp);
-        emit Supply(supply_before, supply_before - value);
     }
 }

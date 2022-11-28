@@ -8,7 +8,7 @@ import './interfaces/IBaseV1Factory.sol';
 import './BaseV1Fees.sol';
 
 // The base pair of pools, either stable or volatile
-contract BaseV1Pair {
+contract SwapPair {
 
     string public name;
     string public symbol;
@@ -32,7 +32,8 @@ contract BaseV1Pair {
     address public immutable token0;
     address public immutable token1;
     address public immutable fees;
-    address immutable factory;
+    address public immutable factory;
+    uint public immutable fee;
 
     // Structure to capture time period obervations every 30 minutes, used for local oracles
     struct Observation {
@@ -88,19 +89,19 @@ contract BaseV1Pair {
 
     constructor() {
         factory = msg.sender;
-        (address _token0, address _token1, bool _stable) = IBaseV1Factory(msg.sender).getInitializable();
-        (token0, token1, stable) = (_token0, _token1, _stable);
-        fees = address(new BaseV1Fees(_token0, _token1));
+        (address _token0, address _token1, bool _stable, uint _fee) = SwapFactory(msg.sender).getInitializable();
+        (token0, token1, stable, fee) = (_token0, _token1, _stable, _fee);
+        fees = address(new SwapFees(_token0, _token1)); 
         if (_stable) {
-            name = string(abi.encodePacked("StableV1 AMM - ", IERC20(_token0).symbol(), "/", IERC20(_token1).symbol()));
-            symbol = string(abi.encodePacked("sAMM-", IERC20(_token0).symbol(), "/", IERC20(_token1).symbol()));
+            name = string(abi.encodePacked("Stable Pair - ", cIERC20(_token0).symbol(), "/", cIERC20(_token1).symbol()));
+            symbol = string(abi.encodePacked("sAMM-", cIERC20(_token0).symbol(), "/", cIERC20(_token1).symbol()));
         } else {
-            name = string(abi.encodePacked("VolatileV1 AMM - ", IERC20(_token0).symbol(), "/", IERC20(_token1).symbol()));
-            symbol = string(abi.encodePacked("vAMM-", IERC20(_token0).symbol(), "/", IERC20(_token1).symbol()));
-        }
+            name = string(abi.encodePacked("Variable Pair - ", cIERC20(_token0).symbol(), "/", cIERC20(_token1).symbol()));
+            symbol = string(abi.encodePacked("vAMM-", cIERC20(_token0).symbol(), "/", cIERC20(_token1).symbol()));
+        } 
 
-        decimals0 = 10**IERC20(_token0).decimals();
-        decimals1 = 10**IERC20(_token1).decimals();
+        decimals0 = 10**cIERC20(_token0).decimals();
+        decimals1 = 10**cIERC20(_token1).decimals();
 
         observations.push(Observation(block.timestamp, 0, 0));
     }
@@ -141,7 +142,7 @@ contract BaseV1Pair {
             claimable0[msg.sender] = 0;
             claimable1[msg.sender] = 0;
 
-            BaseV1Fees(fees).claimFeesFor(msg.sender, claimed0, claimed1);
+            SwapFees(fees).claimFeesFor(msg.sender, claimed0, claimed1);
 
             emit Claim(msg.sender, msg.sender, claimed0, claimed1);
         }
@@ -149,22 +150,30 @@ contract BaseV1Pair {
 
     // Accrue fees on token0
     function _update0(uint amount) internal {
-        _safeTransfer(token0, fees, amount); // transfer the fees out to BaseV1Fees
-        uint256 _ratio = amount * 1e18 / totalSupply; // 1e18 adjustment is removed during claim
+        address _feeTo = ISwapFactory(factory).feeCollector();
+        uint256 _protocolFee = amount / 10; // 10% of the amount
+        uint256 _feeIncrease = amount - _protocolFee; // Might leave tokens in this contract due to rounding but ok, reserves updated after this function
+        _safeTransfer(token0, _feeTo, _protocolFee);
+        _safeTransfer(token0, fees, _feeIncrease); // transfer the fees out to SwapFees
+        uint256 _ratio = _feeIncrease * 1e18 / totalSupply; // 1e18 adjustment is removed during claim
         if (_ratio > 0) {
             index0 += _ratio;
         }
-        emit Fees(msg.sender, amount, 0);
+        emit Fees(msg.sender, _feeIncrease, 0);
     }
 
     // Accrue fees on token1
     function _update1(uint amount) internal {
-        _safeTransfer(token1, fees, amount);
-        uint256 _ratio = amount * 1e18 / totalSupply;
+        address _feeTo = ISwapFactory(factory).feeCollector();
+        uint256 _protocolFee = amount / 10; // 10% of the amount
+        uint256 _feeIncrease = amount - _protocolFee; // Might leave tokens in this contract due to rounding but ok, reserves updated after this function
+        _safeTransfer(token1, _feeTo, _protocolFee); // Transfer protocol fee to _feeTo
+        _safeTransfer(token1, fees, _feeIncrease); // transfer the fees out to SwapFees
+        uint256 _ratio = _feeIncrease * 1e18 / totalSupply;
         if (_ratio > 0) {
             index1 += _ratio;
         }
-        emit Fees(msg.sender, 0, amount);
+        emit Fees(msg.sender, 0, _feeIncrease);
     }
 
     // this function MUST be called on any balance changes, otherwise can be used to infinitely claim fees
@@ -205,8 +214,10 @@ contract BaseV1Pair {
         uint blockTimestamp = block.timestamp;
         uint timeElapsed = blockTimestamp - blockTimestampLast; // overflow is desired
         if (timeElapsed > 0 && _reserve0 != 0 && _reserve1 != 0) {
-            reserve0CumulativeLast += _reserve0 * timeElapsed;
-            reserve1CumulativeLast += _reserve1 * timeElapsed;
+            unchecked {
+                reserve0CumulativeLast += _reserve0 * timeElapsed;
+                reserve1CumulativeLast += _reserve1 * timeElapsed;
+            }
         }
 
         Observation memory _point = lastObservation();
@@ -300,7 +311,7 @@ contract BaseV1Pair {
         } else {
             liquidity = Math.min(_amount0 * _totalSupply / _reserve0, _amount1 * _totalSupply / _reserve1);
         }
-        require(liquidity > 0, 'ILM'); // BaseV1: INSUFFICIENT_LIQUIDITY_MINTED
+        require(liquidity > 0, 'ILM'); // SwapPair: INSUFFICIENT_LIQUIDITY_MINTED
         _mint(to, liquidity);
 
         _update(_balance0, _balance1, _reserve0, _reserve1);
@@ -319,7 +330,7 @@ contract BaseV1Pair {
         uint _totalSupply = totalSupply; // gas savings, must be defined here since totalSupply can update in _mintFee
         amount0 = _liquidity * _balance0 / _totalSupply; // using balances ensures pro-rata distribution
         amount1 = _liquidity * _balance1 / _totalSupply; // using balances ensures pro-rata distribution
-        require(amount0 > 0 && amount1 > 0, 'ILB'); // BaseV1: INSUFFICIENT_LIQUIDITY_BURNED
+        require(amount0 > 0 && amount1 > 0, 'ILB'); // SwapPair: INSUFFICIENT_LIQUIDITY_BURNED
         _burn(address(this), _liquidity);
         _safeTransfer(_token0, to, amount0);
         _safeTransfer(_token1, to, amount1);
@@ -332,33 +343,33 @@ contract BaseV1Pair {
 
     // this low-level function should be called from a contract which performs important safety checks
     function swap(uint amount0Out, uint amount1Out, address to, bytes calldata data) external lock {
-        require(!IBaseV1Factory(factory).isPaused());
-        require(amount0Out > 0 || amount1Out > 0, 'IOA'); // BaseV1: INSUFFICIENT_OUTPUT_AMOUNT
+        require(!SwapFactory(factory).isPaused());
+        require(amount0Out > 0 || amount1Out > 0, 'IOA'); // SwapPair: INSUFFICIENT_OUTPUT_AMOUNT
         (uint _reserve0, uint _reserve1) =  (reserve0, reserve1);
-        require(amount0Out < _reserve0 && amount1Out < _reserve1, 'IL'); // BaseV1: INSUFFICIENT_LIQUIDITY
+        require(amount0Out < _reserve0 && amount1Out < _reserve1, 'IL'); // SwapPair: INSUFFICIENT_LIQUIDITY
 
         uint _balance0;
         uint _balance1;
         { // scope for _token{0,1}, avoids stack too deep errors
         (address _token0, address _token1) = (token0, token1);
-        require(to != _token0 && to != _token1, 'IT'); // BaseV1: INVALID_TO
+        require(to != _token0 && to != _token1, 'IT'); // SwapPair: INVALID_TO
         if (amount0Out > 0) _safeTransfer(_token0, to, amount0Out); // optimistically transfer tokens
         if (amount1Out > 0) _safeTransfer(_token1, to, amount1Out); // optimistically transfer tokens
-        if (data.length > 0) IBaseV1Callee(to).hook(msg.sender, amount0Out, amount1Out, data); // callback, used for flash loans
+        if (data.length > 0) ISwapCallee(to).hook(msg.sender, amount0Out, amount1Out, data); // callback, used for flash loans
         _balance0 = IERC20(_token0).balanceOf(address(this));
         _balance1 = IERC20(_token1).balanceOf(address(this));
         }
         uint amount0In = _balance0 > _reserve0 - amount0Out ? _balance0 - (_reserve0 - amount0Out) : 0;
         uint amount1In = _balance1 > _reserve1 - amount1Out ? _balance1 - (_reserve1 - amount1Out) : 0;
-        require(amount0In > 0 || amount1In > 0, 'IIA'); // BaseV1: INSUFFICIENT_INPUT_AMOUNT
+        require(amount0In > 0 || amount1In > 0, 'IIA'); // SwapPair: INSUFFICIENT_INPUT_AMOUNT
         { // scope for reserve{0,1}Adjusted, avoids stack too deep errors
         (address _token0, address _token1) = (token0, token1);
-        if (amount0In > 0) _update0(amount0In * IBaseV1Factory(factory).getFee(stable) / 10000); // accrue fees for token0 and move them out of pool
-        if (amount1In > 0) _update1(amount1In * IBaseV1Factory(factory).getFee(stable) / 10000); // accrue fees for token1 and move them out of pool
+        if (amount0In > 0) _update0(amount0In * fee / 1e6); // accrue fees for token0 and move them out of pool
+        if (amount1In > 0) _update1(amount1In * fee / 1e6); // accrue fees for token1 and move them out of pool
         _balance0 = IERC20(_token0).balanceOf(address(this)); // since we removed tokens, we need to reconfirm balances, can also simply use previous balance - amountIn/ 10000, but doing balanceOf again as safety check
         _balance1 = IERC20(_token1).balanceOf(address(this));
         // The curve, either x3y+y3x for stable pools, or x*y for volatile pools
-        require(_k(_balance0, _balance1) >= _k(_reserve0, _reserve1), 'K'); // BaseV1: K
+        require(_k(_balance0, _balance1) >= _k(_reserve0, _reserve1), 'K'); // SwapPair: K
         }
 
         _update(_balance0, _balance1, _reserve0, _reserve1);
@@ -368,8 +379,10 @@ contract BaseV1Pair {
     // force balances to match reserves
     function skim(address to) external lock {
         (address _token0, address _token1) = (token0, token1);
-        _safeTransfer(_token0, to, IERC20(_token0).balanceOf(address(this)) - (reserve0));
-        _safeTransfer(_token1, to, IERC20(_token1).balanceOf(address(this)) - (reserve1));
+        uint toSkim0 = IERC20(_token0).balanceOf(address(this)) - (reserve0);
+        uint toSkim1 = IERC20(_token1).balanceOf(address(this)) - (reserve1);
+        if (toSkim0 != 0) _safeTransfer(_token0, to, toSkim0);
+        if (toSkim1 != 0) _safeTransfer(_token1, to, toSkim1);
     }
 
     // force reserves to match balances
@@ -411,7 +424,7 @@ contract BaseV1Pair {
 
     function getAmountOut(uint amountIn, address tokenIn) external view returns (uint) {
         (uint _reserve0, uint _reserve1) = (reserve0, reserve1);
-        amountIn -= amountIn * IBaseV1Factory(factory).getFee(stable) / 10000; // remove fee from amount received
+        amountIn -= amountIn * fee / 1e6; // remove fee from amount received
         return _getAmountOut(amountIn, tokenIn, _reserve0, _reserve1);
     }
 
@@ -464,7 +477,12 @@ contract BaseV1Pair {
     }
 
     function permit(address owner, address spender, uint value, uint deadline, uint8 v, bytes32 r, bytes32 s) external {
-        require(deadline >= block.timestamp, 'BaseV1: EXPIRED');
+        require(deadline >= block.timestamp, 'SwapPair: EXPIRED');
+        require(v == 27 || v == 28, 'SwapPair: INVALID_SIGNATURE');
+        require(
+            s < 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A1,
+            'SwapPair: INVALID_SIGNATURE'
+        );
         DOMAIN_SEPARATOR = keccak256(
             abi.encode(
                 keccak256('EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)'),
@@ -482,7 +500,7 @@ contract BaseV1Pair {
             )
         );
         address recoveredAddress = ecrecover(digest, v, r, s);
-        require(recoveredAddress != address(0) && recoveredAddress == owner, 'BaseV1: INVALID_SIGNATURE');
+        require(recoveredAddress != address(0) && recoveredAddress == owner, 'SwapPair: INVALID_SIGNATURE');
         allowance[owner][spender] = value;
 
         emit Approval(owner, spender, value);

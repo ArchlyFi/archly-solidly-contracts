@@ -69,7 +69,7 @@ contract Bribe {
 
     constructor(address _voter) {
         voter = _voter;
-        _ve = IBaseV1Voter(_voter)._ve();
+        _ve = IVoter(_voter)._ve();
 
     }
 
@@ -421,10 +421,10 @@ contract Bribe {
 
     // used to notify a gauge/bribe of a given reward, this can create griefing attacks by extending rewards
     function notifyRewardAmount(address token, uint amount) external lock {
-        require(amount > 0, "invalid amount");
+        require(amount > 0, "null amount");
         require(totalSupply > 0, "no votes");
         if (!isReward[token]) {
-            require(IBaseV1Voter(voter).isBribe(address(this), token), "rewards tokens must be whitelisted");
+            require(IVoter(voter).isBribe(address(this), token), "rewards tokens must be whitelisted");
             require(rewards.length < MAX_REWARD_TOKENS, "too many rewards tokens");
             isReward[token] = true; 
             rewards.push(token);
@@ -452,7 +452,7 @@ contract Bribe {
     }
 
     function swapOutReward(uint i, address oldToken, address newToken) external {
-        require(msg.sender == IBaseV1Voter(voter).admin());
+        require(msg.sender == IVoter(voter).admin());
         require(rewards[i] == oldToken);
         isReward[oldToken] = false;
         isReward[newToken] = true;

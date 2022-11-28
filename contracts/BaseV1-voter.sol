@@ -12,17 +12,16 @@ import './interfaces/IGauge.sol';
 import './interfaces/IBribe.sol';
 import './interfaces/IMinter.sol';
 
-contract BaseV1Voter {
+contract Voter {
 
-    address public immutable _ve; // the ve token that governs these contracts
-    address public immutable factory; // the BaseV1Factory
+    address public immutable _ve;
+    address public immutable factory;
+    address public convenience;
     address internal immutable base;
     address public gaugeFactory;
     address public immutable bribeFactory;
     uint internal constant DURATION = 7 days; // rewards are released over 7 days
     address public minter;
-    address public admin;
-    bool public permissionMode;
 
     uint public totalWeight; // total voting weight
 
@@ -34,6 +33,7 @@ contract BaseV1Voter {
     mapping(uint => mapping(address => uint256)) public votes; // nft => gauge => votes
     mapping(uint => address[]) public gaugeVote; // nft => gauge
     mapping(uint => uint) public usedWeights;  // nft => total voting weight of user
+    mapping(uint => uint) public lastVote; // nft id => timestamp of last vote 
     mapping(address => bool) public isGauge;
     mapping(address => bool) public isLive; // gauge => status (live or not)
 
@@ -45,6 +45,7 @@ contract BaseV1Voter {
     mapping(address => uint) public claimable;
     uint internal index;
     mapping(address => uint) internal supplyIndex;
+    address public admin;
 
     event GaugeCreated(address indexed gauge, address creator, address indexed bribe, address indexed pair);
     event Voted(address indexed voter, uint tokenId, uint256 weight);
@@ -56,19 +57,11 @@ contract BaseV1Voter {
     event Attach(address indexed owner, address indexed gauge, uint tokenId);
     event Detach(address indexed owner, address indexed gauge, uint tokenId);
     event Whitelisted(address indexed whitelister, address indexed token);
-    event Delisted(address indexed delister, address indexed token);
     event GaugeKilled(address indexed gauge);
     event GaugeRevived(address indexed gauge);
 
     modifier onlyAdmin() {
         require(msg.sender == admin, "Voter: only admin");
-        _;
-    }
-    
-    modifier checkPermissionMode() {
-        if(permissionMode) {
-            require(msg.sender == admin, "Permission Mode Is Active");
-        }
         _;
     }
 
@@ -87,7 +80,6 @@ contract BaseV1Voter {
         bribeFactory = _bribes;
         minter = msg.sender;
         admin = msg.sender;
-        permissionMode = false;
     }
 
     // simple re-entrancy check
@@ -98,29 +90,16 @@ contract BaseV1Voter {
         _;
         _unlocked = 1;
     }
-
-    function initialize(address[] memory _tokens, address _minter) external {
+    // @param _tokens list of ERC20 tokens to whitelist
+    // @param _minter address of the minter contract
+    function initialize(address _minter) external {
         require(msg.sender == minter);
-        for (uint i = 0; i < _tokens.length; i++) {
-            _whitelist(_tokens[i]);
-        }
-        
         minter = _minter;
     }
 
     function setAdmin(address _admin) external onlyAdmin {
         require(_admin != address(0), "zero address");
         admin = _admin;
-    }
-    
-    function enablePermissionMode() external onlyAdmin {
-        require(!permissionMode, "Permission Mode Enabled");
-        permissionMode = true;
-    }
-
-    function disablePermissionMode() external onlyAdmin {
-        require(permissionMode, "Permission Mode Disabled");
-        permissionMode = false;
     }
 
     function setReward(address _gauge, address _token, bool _status) external onlyAdmin {
@@ -145,22 +124,19 @@ contract BaseV1Voter {
         emit GaugeRevived(_gauge);
     }
 
-    function listing_fee() public view returns (uint) {
-        return (IERC20(base).totalSupply() - IERC20(_ve).totalSupply()) / 200;
-    }
-
-    function reset(uint _tokenId) external {
+    // @param _tokenId the ID of the veNFT to reset votes for
+    function reset(uint _tokenId) external { // OR msg.sender == votingescrow when withdrawing
+        require(_activePeriod() > lastVote[_tokenId], "voted recently");
         require(IVotingEscrow(_ve).isApprovedOrOwner(msg.sender, _tokenId));
+        lastVote[_tokenId] = block.timestamp;
         _reset(_tokenId);
         IVotingEscrow(_ve).abstain(_tokenId);
     }
 
     function _reset(uint _tokenId) internal {
-        require(IVotingEscrow(_ve).isVoteExpired(_tokenId),"Vote Locked!");
         address[] storage _gaugeVote = gaugeVote[_tokenId];
         uint _gaugeVoteCnt = _gaugeVote.length;
         uint256 _totalWeight = 0;
-
         for (uint i = 0; i < _gaugeVoteCnt; i++) {
             address _gauge = _gaugeVote[i];
             uint256 _votes = votes[_tokenId][_gauge];
@@ -182,7 +158,6 @@ contract BaseV1Voter {
     // @notice To be called on voters abusing their voting power
     // @notice _weights are the same as the last ID's vote !
     function poke(uint _tokenId) external {
-        require(IVotingEscrow(_ve).isApprovedOrOwner(msg.sender, _tokenId));
         address[] memory _gaugeVote = gaugeVote[_tokenId];
         uint _gaugeCnt = _gaugeVote.length;
         uint256[] memory _weights = new uint256[](_gaugeCnt);
@@ -196,8 +171,6 @@ contract BaseV1Voter {
 
     function _vote(uint _tokenId, address[] memory _gaugeVote, uint256[] memory _weights) internal {
         _reset(_tokenId);
-        // Lock vote for 1 WEEK
-        IVotingEscrow(_ve).lockVote(_tokenId);
         uint _gaugeCnt = _gaugeVote.length;
         uint256 _weight = IVotingEscrow(_ve).balanceOfNFT(_tokenId);
         uint256 _totalVoteWeight = 0;
@@ -236,18 +209,16 @@ contract BaseV1Voter {
     // @param _weights The list of weights to vote for each gauge
     // @notice the sum of weights is the total weight of the veNFT at max
     function vote(uint tokenId, address[] calldata _gaugeVote, uint256[] calldata _weights) external {
+        uint _lockEnd = IVotingEscrow(_ve).locked__end(tokenId);
+        require(_activePeriod() > lastVote[tokenId], "already voted");
+        require(_nextPeriod() <= _lockEnd, "lock expires");
         require(IVotingEscrow(_ve).isApprovedOrOwner(msg.sender, tokenId));
         require(_gaugeVote.length == _weights.length);
-        uint _lockEnd = IVotingEscrow(_ve).locked__end(tokenId);
-        require(_nextPeriod() <= _lockEnd, "lock expires soon");
+        lastVote[tokenId] = block.timestamp;
         _vote(tokenId, _gaugeVote, _weights);
     }
 
-    function whitelist(address _token) public checkPermissionMode {
-        if(msg.sender != admin) {
-            _safeTransferFrom(base, msg.sender, address(0), listing_fee());
-        }
-
+    function whitelist(address _token) public onlyAdmin {
         _whitelist(_token);
     }
 
@@ -256,20 +227,16 @@ contract BaseV1Voter {
         isWhitelisted[_token] = true;
         emit Whitelisted(msg.sender, _token);
     }
-    
-    function delist(address _token) public onlyAdmin {
-        require(isWhitelisted[_token], "!whitelisted");
-        isWhitelisted[_token] = false;
-        emit Delisted(msg.sender, _token);
-    }
 
-    function createGauge(address _pair) external returns (address) {
+    // @param _pair the pair to create a gauge for
+    // @return the address of the gauge 
+    function createSwapGauge(address _pair) external returns (address gauge) {
+        require(ISwapFactory(factory).isPair(_pair), "!pair");
         require(gauges[_pair] == address(0x0), "exists");
-        require(IBaseV1Factory(factory).isPair(_pair), "!pair");
-        (address _tokenA, address _tokenB) = IBaseV1Core(_pair).tokens();
+        (address _tokenA, address _tokenB) = ISwapPair(_pair).tokens();
         require(isWhitelisted[_tokenA] && isWhitelisted[_tokenB], "!whitelisted");
-        address _bribe = IBaseV1BribeFactory(bribeFactory).createBribe();
-        address _gauge = IBaseV1GaugeFactory(gaugeFactory).createGauge(_pair, _bribe, _ve);
+        address _bribe = IBribeFactory(bribeFactory).createBribe();
+        address _gauge = IGaugeFactory(gaugeFactory).createGauge(_pair, _bribe, _ve);
         IERC20(base).approve(_gauge, type(uint).max);
         bribes[_gauge] = _bribe;
         gauges[_pair] = _gauge;
@@ -315,13 +282,13 @@ contract BaseV1Voter {
 
     // @notice called by Minter contract to distribute weekly rewards
     // @param _amount the amount of tokens distributed
-    function notifyRewardAmount(uint amount) external {
-        _safeTransferFrom(base, msg.sender, address(this), amount); // transfer the distro in
-        uint256 _ratio = amount * 1e18 / totalWeight; // 1e18 adjustment is removed during claim
+    function notifyRewardAmount(uint _amount) external {
+        _safeTransferFrom(base, msg.sender, address(this), _amount); // transfer the distro in
+        uint256 _ratio = _amount * 1e18 / totalWeight; // 1e18 adjustment is removed during claim
         if (_ratio > 0) {
             index += _ratio;
         }
-        emit NotifyReward(msg.sender, base, amount);
+        emit NotifyReward(msg.sender, base, _amount);
     }
 
     function updateFor(address[] memory _gauges) external {
