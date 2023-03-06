@@ -171,7 +171,7 @@ function distribute(address token) external
 | BaseV1Voter | [0xd9742c670eEE8001d965964E05793c42c588B657](https://www.teloscan.io/address/0xd9742c670eEE8001d965964E05793c42c588B657#contract) |
 | BaseV1Minter | [0xdB6db572DA4be59656f87Ee5711D8334e1f9b0E9](https://www.teloscan.io/address/0xdB6db572DA4be59656f87Ee5711D8334e1f9b0E9#contract) |
 
-### Arbitrum Nove, BNB Chain, Fantom, Kava, Optimism, and Polygon
+### Arbitrum Nova, BNB Chain, Fantom, Kava, Optimism, and Polygon
 
 | Name | Address | Arbitrum Nova| BNB Chain | Fantom | Kava | Optimism | Polygom |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -184,6 +184,20 @@ function distribute(address token) external
 | BaseV1BribeFactory | 0xbc5AAF4970E50B2504C2441367B87B6F3D9Ac504 | [contract](https://nova.arbiscan.io/address/0xbc5AAF4970E50B2504C2441367B87B6F3D9Ac504#code) | [contract](https://bscscan.com/address/0xbc5AAF4970E50B2504C2441367B87B6F3D9Ac504#code) | [contract](https://ftmscan.com/address/0xbc5AAF4970E50B2504C2441367B87B6F3D9Ac504#code) | [contract](https://explorer.kava.io/address/0xbc5AAF4970E50B2504C2441367B87B6F3D9Ac504/contracts) | [contract](https://optimistic.etherscan.io/address/0xbc5AAF4970E50B2504C2441367B87B6F3D9Ac504#code) | [contract](https://polygonscan.com/address/0xbc5AAF4970E50B2504C2441367B87B6F3D9Ac504#code) | 
 | BaseV1Voter | 0xd9Fd10945d69053Eadd365B786977B6290fea088 | [contract](https://nova.arbiscan.io/address/0xd9Fd10945d69053Eadd365B786977B6290fea088#code) | [contract](https://bscscan.com/address/0xd9Fd10945d69053Eadd365B786977B6290fea088#code) | [contract](https://ftmscan.com/address/0xd9Fd10945d69053Eadd365B786977B6290fea088#code) | [contract](https://explorer.kava.io/address/0xd9Fd10945d69053Eadd365B786977B6290fea088/contracts) | [contract](https://optimistic.etherscan.io/address/0xd9Fd10945d69053Eadd365B786977B6290fea088#code) | [contract](https://polygonscan.com/address/0xd9Fd10945d69053Eadd365B786977B6290fea088#code) | 
 | BaseV1Minter | 0xd865043A22604Caf267422283B8601A9d546301f | [contract](https://nova.arbiscan.io/address/0xd865043A22604Caf267422283B8601A9d546301f#code) | [contract](https://bscscan.com/address/0xd865043A22604Caf267422283B8601A9d546301f#code) | [contract](https://ftmscan.com/address/0xd865043A22604Caf267422283B8601A9d546301f#code) | [contract](https://explorer.kava.io/address/0xd865043A22604Caf267422283B8601A9d546301f/contracts) | [contract](https://optimistic.etherscan.io/address/0xd865043A22604Caf267422283B8601A9d546301f#code) | [contract](https://polygonscan.com/address/0xd865043A22604Caf267422283B8601A9d546301f#code) | 
+
+### Arbitrum One
+
+| Name | Address |
+| :--- | :--- |
+| Arc | [0x9435Ffb33Ce0180F55E08490C606eC3BD07da929](https://arbiscan.io/address/0x9435Ffb33Ce0180F55E08490C606eC3BD07da929#code) |
+| veArc | [0x4c01dF6B9be381BA2a687D0ED5c40039dEEaf0a9](https://arbiscan.io/address/0x4c01dF6B9be381BA2a687D0ED5c40039dEEaf0a9#code) |
+| veArc-dist | [0x5A63409C88dDD327A56eEf3a3492Bb0Ce74ba795](https://arbiscan.io/address/0x5A63409C88dDD327A56eEf3a3492Bb0Ce74ba795#code) |
+| BaseV1Factory | [0xeafBFeb64F8e3793D7d1767774efd33b203200C9](https://arbiscan.io/address/0xeafBFeb64F8e3793D7d1767774efd33b203200C9#code) |
+| BaseV1Router01 | [0x684802262D614D0Cd0C9571672F03Dd9e85D7824](https://arbiscan.io/address/0x684802262D614D0Cd0C9571672F03Dd9e85D7824#code) |
+| BaseV1GaugeFactory | [0xbc5AAF4970E50B2504C2441367B87B6F3D9Ac504](https://arbiscan.io/address/0xbc5AAF4970E50B2504C2441367B87B6F3D9Ac504#code) |
+| BaseV1BribeFactory | [0xd9Fd10945d69053Eadd365B786977B6290fea088](https://arbiscan.io/address/0xd9Fd10945d69053Eadd365B786977B6290fea088#code) |
+| BaseV1Voter | [0xA978acE8D8809213Cd5e6212197196cB847129E9](https://arbiscan.io/address/0xA978acE8D8809213Cd5e6212197196cB847129E9#code) |
+| BaseV1Minter | [0xE9d7623f44b7726FE2013c2f8043051358731320](https://arbiscan.io/address/0xE9d7623f44b7726FE2013c2f8043051358731320#code) |
 
 
 ## Security
