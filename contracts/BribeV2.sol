@@ -130,7 +130,9 @@ contract BribeV2 {
                 (_ts, _bal) = underlying_bribe.checkpoints(tokenId,_index);
                 // get supply of last checkpoint in this epoch
                 (, _supply) = underlying_bribe.supplyCheckpoints(underlying_bribe.getPriorSupplyIndex(_currTs + DURATION));
-                reward += _bal * tokenRewardsPerEpoch[token][_currTs] / _supply;
+                if(_supply > 0) {
+                    reward += _bal * tokenRewardsPerEpoch[token][_currTs] / _supply;
+                }
                 _currTs += DURATION;
             }
         }
