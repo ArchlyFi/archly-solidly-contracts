@@ -141,7 +141,7 @@ function vote(address[] calldata _poolVote, uint[] calldata _weights) external
 function distribute(address token) external
 ```
 
-### Telos Testnet deployment
+### Telos Testnet
 
 | Name | Address |
 | :--- | :--- |
@@ -155,6 +155,7 @@ function distribute(address token) external
 | BaseV1GaugeFactory | [0x0eDc4d37F3A8B30065Ceede737C60e315A95f56e](https://testnet.teloscan.io/address/0x0eDc4d37F3A8B30065Ceede737C60e315A95f56e#contract) |
 | BaseV1BribeFactory | [0x538a55F9d2e1D128B378A6Ff822F073cb86111f1](https://testnet.teloscan.io/address/0x538a55F9d2e1D128B378A6Ff822F073cb86111f1#contract) |
 | BaseV1BribeV2Factory | [0x2527F718D7F7032FF8632a817AD1725919BF6939](https://testnet.teloscan.io/address/0x2527F718D7F7032FF8632a817AD1725919BF6939#contract) |
+| BaseV1BribeV2Factory (2.1) | [0xA32611B4e41e9fF066aC1A72CD8a7F8aeC1072E9](https://testnet.teloscan.io/address/0xA32611B4e41e9fF066aC1A72CD8a7F8aeC1072E9#contract) |
 | BaseV1Voter | [0xf6339700bb26638923dbDF7527Fe125cEae3AE70](https://testnet.teloscan.io/address/0xf6339700bb26638923dbDF7527Fe125cEae3AE70#contract) |
 | BaseV1Minter | [0xc310e3d746DE609a06dB2a51eAAD58Ecd00dc84c](https://testnet.teloscan.io/address/0xc310e3d746DE609a06dB2a51eAAD58Ecd00dc84c#contract) |
 
@@ -172,6 +173,7 @@ function distribute(address token) external
 | BaseV1GaugeFactory | [0x3D5eA100C38c0Af9f5d94105EA4E160AeE6DC668](https://www.teloscan.io/address/0x3D5eA100C38c0Af9f5d94105EA4E160AeE6DC668#contract) |
 | BaseV1BribeFactory | [0x11ca072a392D92ca63976CD9c1dc38de1FE578ee](https://www.teloscan.io/address/0x11ca072a392D92ca63976CD9c1dc38de1FE578ee#contract) |
 | BaseVBribeV2Factory | [0xbf9d939436f643823FfDeDE99E2602f75D0df234](https://www.teloscan.io/address/0xbf9d939436f643823FfDeDE99E2602f75D0df234#contract) |
+| BaseVBribeV2Factory (2.1) | [0x9cC1fc700695c21730E3a84748A50705F3f0655D](https://www.teloscan.io/address/0x9cC1fc700695c21730E3a84748A50705F3f0655D#contract) |
 | BaseV1Voter | [0xd9742c670eEE8001d965964E05793c42c588B657](https://www.teloscan.io/address/0xd9742c670eEE8001d965964E05793c42c588B657#contract) |
 | BaseV1Minter | [0xdB6db572DA4be59656f87Ee5711D8334e1f9b0E9](https://www.teloscan.io/address/0xdB6db572DA4be59656f87Ee5711D8334e1f9b0E9#contract) |
 
@@ -188,6 +190,7 @@ function distribute(address token) external
 | BaseV1GaugeFactory | 0x5A63409C88dDD327A56eEf3a3492Bb0Ce74ba795 | [contract](https://nova.arbiscan.io/address/0x5A63409C88dDD327A56eEf3a3492Bb0Ce74ba795#code) | [contract](https://bscscan.com/address/0x5A63409C88dDD327A56eEf3a3492Bb0Ce74ba795#code) | [contract](https://ftmscan.com/address/0x5A63409C88dDD327A56eEf3a3492Bb0Ce74ba795#code) | [contract](https://explorer.kava.io/address/0x5A63409C88dDD327A56eEf3a3492Bb0Ce74ba795/contracts) | [contract](https://optimistic.etherscan.io/address/0x5A63409C88dDD327A56eEf3a3492Bb0Ce74ba795#code) | [contract](https://polygonscan.com/address/0x5A63409C88dDD327A56eEf3a3492Bb0Ce74ba795#code) | 
 | BaseV1BribeFactory | 0xbc5AAF4970E50B2504C2441367B87B6F3D9Ac504 | [contract](https://nova.arbiscan.io/address/0xbc5AAF4970E50B2504C2441367B87B6F3D9Ac504#code) | [contract](https://bscscan.com/address/0xbc5AAF4970E50B2504C2441367B87B6F3D9Ac504#code) | [contract](https://ftmscan.com/address/0xbc5AAF4970E50B2504C2441367B87B6F3D9Ac504#code) | [contract](https://explorer.kava.io/address/0xbc5AAF4970E50B2504C2441367B87B6F3D9Ac504/contracts) | [contract](https://optimistic.etherscan.io/address/0xbc5AAF4970E50B2504C2441367B87B6F3D9Ac504#code) | [contract](https://polygonscan.com/address/0xbc5AAF4970E50B2504C2441367B87B6F3D9Ac504#code) | 
 | BaseV1BribeV2Factory | 0xbf9d939436f643823FfDeDE99E2602f75D0df234 | [contract](https://nova.arbiscan.io/address/0xbf9d939436f643823FfDeDE99E2602f75D0df234#code) | [contract](https://bscscan.com/address/0xbf9d939436f643823FfDeDE99E2602f75D0df234#code) | [contract](https://ftmscan.com/address/0xbf9d939436f643823FfDeDE99E2602f75D0df234#code) | [contract](https://explorer.kava.io/address/0xbf9d939436f643823FfDeDE99E2602f75D0df234/contracts) | [contract](https://optimistic.etherscan.io/address/0xbf9d939436f643823FfDeDE99E2602f75D0df234#code) | [contract](https://polygonscan.com/address/0xbf9d939436f643823FfDeDE99E2602f75D0df234#code) | 
+| BaseV1BribeV2Factory (2.1) | 0x9cC1fc700695c21730E3a84748A50705F3f0655D | [contract](https://nova.arbiscan.io/address/0x9cC1fc700695c21730E3a84748A50705F3f0655D#code) | [contract](https://bscscan.com/address/0x9cC1fc700695c21730E3a84748A50705F3f0655D#code) | [contract](https://ftmscan.com/address/0x9cC1fc700695c21730E3a84748A50705F3f0655D#code) | [contract](https://explorer.kava.io/address/0x9cC1fc700695c21730E3a84748A50705F3f0655D/contracts) | [contract](https://optimistic.etherscan.io/address/0x9cC1fc700695c21730E3a84748A50705F3f0655D#code) | [contract](https://polygonscan.com/address/0x9cC1fc700695c21730E3a84748A50705F3f0655D#code) | 
 | BaseV1Voter | 0xd9Fd10945d69053Eadd365B786977B6290fea088 | [contract](https://nova.arbiscan.io/address/0xd9Fd10945d69053Eadd365B786977B6290fea088#code) | [contract](https://bscscan.com/address/0xd9Fd10945d69053Eadd365B786977B6290fea088#code) | [contract](https://ftmscan.com/address/0xd9Fd10945d69053Eadd365B786977B6290fea088#code) | [contract](https://explorer.kava.io/address/0xd9Fd10945d69053Eadd365B786977B6290fea088/contracts) | [contract](https://optimistic.etherscan.io/address/0xd9Fd10945d69053Eadd365B786977B6290fea088#code) | [contract](https://polygonscan.com/address/0xd9Fd10945d69053Eadd365B786977B6290fea088#code) | 
 | BaseV1Minter | 0xd865043A22604Caf267422283B8601A9d546301f | [contract](https://nova.arbiscan.io/address/0xd865043A22604Caf267422283B8601A9d546301f#code) | [contract](https://bscscan.com/address/0xd865043A22604Caf267422283B8601A9d546301f#code) | [contract](https://ftmscan.com/address/0xd865043A22604Caf267422283B8601A9d546301f#code) | [contract](https://explorer.kava.io/address/0xd865043A22604Caf267422283B8601A9d546301f/contracts) | [contract](https://optimistic.etherscan.io/address/0xd865043A22604Caf267422283B8601A9d546301f#code) | [contract](https://polygonscan.com/address/0xd865043A22604Caf267422283B8601A9d546301f#code) | 
 
@@ -204,6 +207,7 @@ function distribute(address token) external
 | BaseV1GaugeFactory | [0xbc5AAF4970E50B2504C2441367B87B6F3D9Ac504](https://arbiscan.io/address/0xbc5AAF4970E50B2504C2441367B87B6F3D9Ac504#code) |
 | BaseV1BribeFactory | [0xd9Fd10945d69053Eadd365B786977B6290fea088](https://arbiscan.io/address/0xd9Fd10945d69053Eadd365B786977B6290fea088#code) |
 | BaseV1BribeV2Factory | [0xbf9d939436f643823FfDeDE99E2602f75D0df234](https://arbiscan.io/address/0xbf9d939436f643823FfDeDE99E2602f75D0df234#code) |
+| BaseV1BribeV2Factory (2.1) | [0x9cC1fc700695c21730E3a84748A50705F3f0655D](https://arbiscan.io/address/0x9cC1fc700695c21730E3a84748A50705F3f0655D#code) |
 | BaseV1Voter | [0xA978acE8D8809213Cd5e6212197196cB847129E9](https://arbiscan.io/address/0xA978acE8D8809213Cd5e6212197196cB847129E9#code) |
 | BaseV1Minter | [0xE9d7623f44b7726FE2013c2f8043051358731320](https://arbiscan.io/address/0xE9d7623f44b7726FE2013c2f8043051358731320#code) |
 
