@@ -6,6 +6,7 @@ import './interfaces/IERC721.sol';
 import './interfaces/IERC721Receiver.sol';
 import './interfaces/IERC721Metadata.sol';
 import './interfaces/IERC20.sol';
+import './interfaces/IVeArtProxy.sol';
 
 /**
 @title Voting Escrow
@@ -74,6 +75,9 @@ contract ve is IERC721, IERC721Metadata {
     address immutable public token;
     uint public supply;
     mapping(uint => LockedBalance) public locked;
+    
+    address public admin;
+    address public artProxy;
 
     mapping(uint => uint) public ownership_change;
 
@@ -90,7 +94,7 @@ contract ve is IERC721, IERC721Metadata {
 
     string constant public name = "veArc";
     string constant public symbol = "veArc";
-    string constant public version = "1.0.0";
+    string constant public version = "1.1.0";
     uint8 constant public decimals = 18;
 
     /// @dev Current count of token
@@ -143,7 +147,8 @@ contract ve is IERC721, IERC721Metadata {
     /// @notice Contract constructor
     /// @param token_addr `ERC20CRV` token address
     constructor(
-        address token_addr
+        address token_addr,
+        address art_proxy
     ) {
         require(
             token_addr != address(0),
@@ -153,6 +158,9 @@ contract ve is IERC721, IERC721Metadata {
         voter = msg.sender;
         point_history[0].blk = block.number;
         point_history[0].ts = block.timestamp;
+        
+        admin = msg.sender;
+        artProxy = art_proxy;
 
         supportedInterfaces[ERC165_INTERFACE_ID] = true;
         supportedInterfaces[ERC721_INTERFACE_ID] = true;
@@ -906,14 +914,23 @@ contract ve is IERC721, IERC721Metadata {
             return uint(int256(last_point.bias));
         }
     }
+    
+    function setAdmin(address _admin) external {
+        require(msg.sender == admin);
+        admin = _admin;
+    }
+    
+    function setArtProxy(address _proxy) external {
+        require(msg.sender == admin);
+        artProxy = _proxy;
+    }
 
     /// @dev Returns current token URI metadata
     /// @param _tokenId Token ID to fetch URI for.
     function tokenURI(uint _tokenId) external view returns (string memory) {
         require(idToOwner[_tokenId] != address(0), "Query for nonexistent token");
         LockedBalance memory _locked = locked[_tokenId];
-        return
-        _tokenURI(
+        return IVeArtProxy(artProxy)._tokenURI(
             _tokenId,
             _balanceOfNFT(_tokenId, block.timestamp),
             _locked.end,
@@ -1052,39 +1069,6 @@ contract ve is IERC721, IERC721Metadata {
         }
         // Now dt contains info on how far are we beyond point
         return _supply_at(point, point.ts + dt);
-    }
-
-    function _tokenURI(uint _tokenId, uint _balanceOf, uint _locked_end, uint _value) internal pure returns (string memory output) {
-        output = '<svg xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMinYMin meet" viewBox="0 0 350 350"><style>.base { fill: white; font-family: serif; font-size: 14px; }</style><rect width="100%" height="100%" fill="black" /><text x="10" y="20" class="base">';
-        output = string(abi.encodePacked(output, "token ", toString(_tokenId), '</text><text x="10" y="40" class="base">'));
-        output = string(abi.encodePacked(output, "balanceOf ", toString(_balanceOf), '</text><text x="10" y="60" class="base">'));
-        output = string(abi.encodePacked(output, "locked_end ", toString(_locked_end), '</text><text x="10" y="80" class="base">'));
-        output = string(abi.encodePacked(output, "value ", toString(_value), '</text></svg>'));
-
-        string memory json = Base64.encode(bytes(string(abi.encodePacked('{"name": "lock #', toString(_tokenId), '", "description": "Archly locks, can be used to boost gauge yields, vote on token emission, and receive bribes", "image": "data:image/svg+xml;base64,', Base64.encode(bytes(output)), '"}'))));
-        output = string(abi.encodePacked('data:application/json;base64,', json));
-    }
-
-    function toString(uint value) internal pure returns (string memory) {
-        // Inspired by OraclizeAPI's implementation - MIT license
-        // https://github.com/oraclize/ethereum-api/blob/b42146b063c7d6ee1358846c198246239e9360e8/oraclizeAPI_0.4.25.sol
-
-        if (value == 0) {
-            return "0";
-        }
-        uint temp = value;
-        uint digits;
-        while (temp != 0) {
-            digits++;
-            temp /= 10;
-        }
-        bytes memory buffer = new bytes(digits);
-        while (value != 0) {
-            digits -= 1;
-            buffer[digits] = bytes1(uint8(48 + uint(value % 10)));
-            value /= 10;
-        }
-        return string(buffer);
     }
 
     function _burn(uint _tokenId) internal {

@@ -42,4 +42,6 @@ interface IVotingEscrow {
     function balanceOf(address owner) external view returns (uint);
     function safeTransferFrom(address from, address to, uint tokenId) external;
     function burn(uint _tokenId) external;
+    function setAdmin(address _admin) external;
+    function setArtProxy(address _proxy) external;
 }
