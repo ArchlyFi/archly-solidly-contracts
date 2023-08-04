@@ -211,6 +211,20 @@ function distribute(address token) external
 | BaseV1Voter | [0xA978acE8D8809213Cd5e6212197196cB847129E9](https://arbiscan.io/address/0xA978acE8D8809213Cd5e6212197196cB847129E9#code) |
 | BaseV1Minter | [0xE9d7623f44b7726FE2013c2f8043051358731320](https://arbiscan.io/address/0xE9d7623f44b7726FE2013c2f8043051358731320#code) |
 
+### Base
+
+| Name | Address |
+| :--- | :--- |
+| Arc | [0x684802262D614D0Cd0C9571672F03Dd9e85D7824](https://basescan.org/address/0x684802262D614D0Cd0C9571672F03Dd9e85D7824#code) |
+| veArc | [0x4c01dF6B9be381BA2a687D0ED5c40039dEEaf0a9](https://basescan.org/address/0x4c01dF6B9be381BA2a687D0ED5c40039dEEaf0a9#code) |
+| veArc-dist | [0x5A63409C88dDD327A56eEf3a3492Bb0Ce74ba795](https://basescan.org/address/0x5A63409C88dDD327A56eEf3a3492Bb0Ce74ba795#code) |
+| BaseV1Factory | [0xBa06043a777652BAF540CcC785EDaFd94eE05b37](https://basescan.org/address/0xBa06043a777652BAF540CcC785EDaFd94eE05b37#code) |
+| BaseV1Router02 | [0xeafBFeb64F8e3793D7d1767774efd33b203200C9](https://basescan.org/address/0xeafBFeb64F8e3793D7d1767774efd33b203200C9#code) |
+| BaseV1GaugeFactory | [0xbc5AAF4970E50B2504C2441367B87B6F3D9Ac504](https://basescan.org/address/0xbc5AAF4970E50B2504C2441367B87B6F3D9Ac504#code) |
+| BaseV1BribeFactory | [0xd9Fd10945d69053Eadd365B786977B6290fea088](https://basescan.org/address/0xd9Fd10945d69053Eadd365B786977B6290fea088#code) |
+| BaseV1BribeV2Factory (2.1) | [0x12BfB58c8Fb5De8CE77b45F465eF9D2613D4B5e6](https://basescan.org/address/0x12BfB58c8Fb5De8CE77b45F465eF9D2613D4B5e6#code) |
+| BaseV1Voter | [0xA978acE8D8809213Cd5e6212197196cB847129E9](https://basescan.org/address/0xA978acE8D8809213Cd5e6212197196cB847129E9#code) |
+| BaseV1Minter | [0xE9d7623f44b7726FE2013c2f8043051358731320](https://basescan.org/address/0xE9d7623f44b7726FE2013c2f8043051358731320#code) |
 
 ## Security
 
