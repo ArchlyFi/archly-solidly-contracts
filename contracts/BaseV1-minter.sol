@@ -20,7 +20,7 @@ contract BaseV1Minter {
     IBaseV1Voter public immutable _voter;
     IVotingEscrow public immutable _ve;
     IVotingEscrowDistributor public immutable _ve_dist;
-    uint public weekly = 20000000e18;
+    uint public weekly = 5000000e18;
     uint public active_period;
     uint internal constant lock = 86400 * 7 * 52 * 4;
 
