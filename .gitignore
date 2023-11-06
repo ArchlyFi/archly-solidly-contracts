@@ -10,3 +10,4 @@ cache
 artifacts
 hardhat.config.js
 .DS_Store
+.env.enc
