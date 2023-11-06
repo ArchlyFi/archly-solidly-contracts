@@ -9,5 +9,6 @@ tasks
 cache
 artifacts
 hardhat.config.js
+hardhat.config.ts
 .DS_Store
 .env.enc
