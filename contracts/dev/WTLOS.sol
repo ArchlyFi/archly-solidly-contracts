@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.11;
+pragma solidity 0.8.22;
 
 contract WTLOS {
     string public name     = "Wrapped TLOS";

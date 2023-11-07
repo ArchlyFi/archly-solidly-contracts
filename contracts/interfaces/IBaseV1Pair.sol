@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.11;
+pragma solidity 0.8.22;
 
 interface IBaseV1Pair {
     function transferFrom(address src, address dst, uint amount) external returns (bool);
