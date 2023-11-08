@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.22;
 
-import './interfaces/IERC20.sol';
-import './libraries/Math.sol';
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import './interfaces/ICallee.sol';
 import './interfaces/IPairFactory.sol';
 import './Fees.sol';
@@ -92,15 +93,15 @@ contract Pair {
         (token0, token1, stable) = (_token0, _token1, _stable);
         fees = address(new Fees(_token0, _token1));
         if (_stable) {
-            name = string(abi.encodePacked("StableV1 AMM - ", IERC20(_token0).symbol(), "/", IERC20(_token1).symbol()));
-            symbol = string(abi.encodePacked("sAMM-", IERC20(_token0).symbol(), "/", IERC20(_token1).symbol()));
+            name = string(abi.encodePacked("Archly DEX Stable AMM - ", IERC20Metadata(_token0).symbol(), "/", IERC20Metadata(_token1).symbol()));
+            symbol = string(abi.encodePacked("sAMM-", IERC20Metadata(_token0).symbol(), "/", IERC20Metadata(_token1).symbol()));
         } else {
-            name = string(abi.encodePacked("VolatileV1 AMM - ", IERC20(_token0).symbol(), "/", IERC20(_token1).symbol()));
-            symbol = string(abi.encodePacked("vAMM-", IERC20(_token0).symbol(), "/", IERC20(_token1).symbol()));
+            name = string(abi.encodePacked("Archly DEX Volatile AMM - ", IERC20Metadata(_token0).symbol(), "/", IERC20Metadata(_token1).symbol()));
+            symbol = string(abi.encodePacked("vAMM-", IERC20Metadata(_token0).symbol(), "/", IERC20Metadata(_token1).symbol()));
         }
 
-        decimals0 = 10**IERC20(_token0).decimals();
-        decimals1 = 10**IERC20(_token1).decimals();
+        decimals0 = 10**IERC20Metadata(_token0).decimals();
+        decimals1 = 10**IERC20Metadata(_token1).decimals();
 
         observations.push(Observation(block.timestamp, 0, 0));
     }

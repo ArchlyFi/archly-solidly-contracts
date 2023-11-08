@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.22;
 
-import './libraries/Math.sol';
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import './interfaces/IVotingEscrow.sol';
 import './interfaces/IUnderlying.sol';
 import './interfaces/IVoter.sol';

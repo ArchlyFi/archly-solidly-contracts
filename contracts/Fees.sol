@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.22;
 
-import './interfaces/IERC20.sol';
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // Base V1 Fees contract is used as a 1:1 pair relationship to split out fees, this ensures that the curve does not need to be modified for LP shares
 contract Fees {

@@ -1,15 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.22;
 
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import './interfaces/IPairFactory.sol';
 import './interfaces/IPair.sol';
-import './interfaces/IERC20.sol';
-import './interfaces/IWTLOS.sol';
-import './libraries/Math.sol';
+import './interfaces/IWETH.sol';
 
 contract Router {
     
-    using Math for uint;
+    using SafeMath for uint;
     
     struct route {
         address from;
@@ -18,7 +19,7 @@ contract Router {
     }
 
     address public immutable factory;
-    IWTLOS public immutable wtlos;
+    IWETH public immutable weth;
     uint internal constant MINIMUM_LIQUIDITY = 10**3;
     bytes32 immutable pairCodeHash;
 
@@ -27,14 +28,14 @@ contract Router {
         _;
     }
 
-    constructor(address _factory, address _wtlos) {
+    constructor(address _factory, address _weth) {
         factory = _factory;
         pairCodeHash = IPairFactory(_factory).pairCodeHash();
-        wtlos = IWTLOS(_wtlos);
+        weth = IWETH(_weth);
     }
 
     receive() external payable {
-        assert(msg.sender == address(wtlos)); // only accept ETH via fallback from the WETH contract
+        assert(msg.sender == address(weth)); // only accept ETH via fallback from the WETH contract
     }
 
     function sortTokens(address tokenA, address tokenB) public pure returns (address token0, address token1) {
@@ -204,31 +205,31 @@ contract Router {
         liquidity = IPair(pair).mint(to);
     }
 
-    function addLiquidityTLOS(
+    function addLiquidityETH(
         address token,
         bool stable,
         uint amountTokenDesired,
         uint amountTokenMin,
-        uint amountTLOSMin,
+        uint amountETHMin,
         address to,
         uint deadline
-    ) external payable ensure(deadline) returns (uint amountToken, uint amountTLOS, uint liquidity) {
-        (amountToken, amountTLOS) = _addLiquidity(
+    ) external payable ensure(deadline) returns (uint amountToken, uint amountETH, uint liquidity) {
+        (amountToken, amountETH) = _addLiquidity(
             token,
-            address(wtlos),
+            address(weth),
             stable,
             amountTokenDesired,
             msg.value,
             amountTokenMin,
-            amountTLOSMin
+            amountETHMin
         );
-        address pair = pairFor(token, address(wtlos), stable);
+        address pair = pairFor(token, address(weth), stable);
         _safeTransferFrom(token, msg.sender, pair, amountToken);
-        wtlos.deposit{value: amountTLOS}();
-        assert(wtlos.transfer(pair, amountTLOS));
+        weth.deposit{value: amountETH}();
+        assert(weth.transfer(pair, amountETH));
         liquidity = IPair(pair).mint(to);
         // refund dust eth, if any
-        if (msg.value > amountTLOS) _safeTransferTLOS(msg.sender, msg.value - amountTLOS);
+        if (msg.value > amountETH) _safeTransferETH(msg.sender, msg.value - amountETH);
     }
 
     // **** REMOVE LIQUIDITY ****
@@ -251,28 +252,28 @@ contract Router {
         require(amountB >= amountBMin, 'BaseV1Router: INSUFFICIENT_B_AMOUNT');
     }
 
-    function removeLiquidityTLOS(
+    function removeLiquidityETH(
         address token,
         bool stable,
         uint liquidity,
         uint amountTokenMin,
-        uint amountTLOSMin,
+        uint amountETHMin,
         address to,
         uint deadline
-    ) public ensure(deadline) returns (uint amountToken, uint amountTLOS) {
-        (amountToken, amountTLOS) = removeLiquidity(
+    ) public ensure(deadline) returns (uint amountToken, uint amountETH) {
+        (amountToken, amountETH) = removeLiquidity(
             token,
-            address(wtlos),
+            address(weth),
             stable,
             liquidity,
             amountTokenMin,
-            amountTLOSMin,
+            amountETHMin,
             address(this),
             deadline
         );
         _safeTransfer(token, to, amountToken);
-        wtlos.withdraw(amountTLOS);
-        _safeTransferTLOS(to, amountTLOS);
+        weth.withdraw(amountETH);
+        _safeTransferETH(to, amountETH);
     }
 
     function removeLiquidityWithPermit(
@@ -295,20 +296,20 @@ contract Router {
         (amountA, amountB) = removeLiquidity(tokenA, tokenB, stable, liquidity, amountAMin, amountBMin, to, deadline);
     }
 
-    function removeLiquidityTLOSWithPermit(
+    function removeLiquidityETHWithPermit(
         address token,
         bool stable,
         uint liquidity,
         uint amountTokenMin,
-        uint amountTLOSMin,
+        uint amountETHMin,
         address to,
         uint deadline,
         bool approveMax, uint8 v, bytes32 r, bytes32 s
-    ) external returns (uint amountToken, uint amountTLOS) {
-        address pair = pairFor(token, address(wtlos), stable);
+    ) external returns (uint amountToken, uint amountETH) {
+        address pair = pairFor(token, address(weth), stable);
         uint value = approveMax ? type(uint).max : liquidity;
         IPair(pair).permit(msg.sender, address(this), value, deadline, v, r, s);
-        (amountToken, amountTLOS) = removeLiquidityTLOS(token, stable, liquidity, amountTokenMin, amountTLOSMin, to, deadline);
+        (amountToken, amountETH) = removeLiquidityETH(token, stable, liquidity, amountTokenMin, amountETHMin, to, deadline);
     }
 
     // **** SWAP ****
@@ -361,34 +362,34 @@ contract Router {
         _swap(amounts, routes, to);
     }
 
-    function swapExactTLOSForTokens(uint amountOutMin, route[] calldata routes, address to, uint deadline)
+    function swapExactETHForTokens(uint amountOutMin, route[] calldata routes, address to, uint deadline)
     external
     payable
     ensure(deadline)
     returns (uint[] memory amounts)
     {
-        require(routes[0].from == address(wtlos), 'BaseV1Router: INVALID_PATH');
+        require(routes[0].from == address(weth), 'BaseV1Router: INVALID_PATH');
         amounts = getAmountsOut(msg.value, routes);
         require(amounts[amounts.length - 1] >= amountOutMin, 'BaseV1Router: INSUFFICIENT_OUTPUT_AMOUNT');
-        wtlos.deposit{value: amounts[0]}();
-        assert(wtlos.transfer(pairFor(routes[0].from, routes[0].to, routes[0].stable), amounts[0]));
+        weth.deposit{value: amounts[0]}();
+        assert(weth.transfer(pairFor(routes[0].from, routes[0].to, routes[0].stable), amounts[0]));
         _swap(amounts, routes, to);
     }
 
-    function swapExactTokensForTLOS(uint amountIn, uint amountOutMin, route[] calldata routes, address to, uint deadline)
+    function swapExactTokensForETH(uint amountIn, uint amountOutMin, route[] calldata routes, address to, uint deadline)
     external
     ensure(deadline)
     returns (uint[] memory amounts)
     {
-        require(routes[routes.length - 1].to == address(wtlos), 'BaseV1Router: INVALID_PATH');
+        require(routes[routes.length - 1].to == address(weth), 'BaseV1Router: INVALID_PATH');
         amounts = getAmountsOut(amountIn, routes);
         require(amounts[amounts.length - 1] >= amountOutMin, 'BaseV1Router: INSUFFICIENT_OUTPUT_AMOUNT');
         _safeTransferFrom(
             routes[0].from, msg.sender, pairFor(routes[0].from, routes[0].to, routes[0].stable), amounts[0]
         );
         _swap(amounts, routes, address(this));
-        wtlos.withdraw(amounts[amounts.length - 1]);
-        _safeTransferTLOS(to, amounts[amounts.length - 1]);
+        weth.withdraw(amounts[amounts.length - 1]);
+        _safeTransferETH(to, amounts[amounts.length - 1]);
     }
 
     function UNSAFE_swapExactTokensForTokens(
@@ -402,7 +403,7 @@ contract Router {
         return amounts;
     }
 
-    function _safeTransferTLOS(address to, uint value) internal {
+    function _safeTransferETH(address to, uint value) internal {
         (bool success,) = to.call{value:value}(new bytes(0));
         require(success, 'TransferHelper: ETH_TRANSFER_FAILED');
     }
@@ -422,45 +423,45 @@ contract Router {
     }
     
     // **** REMOVE LIQUIDITY (supporting fee-on-transfer tokens)****
-    function removeLiquidityTLOSSupportingFeeOnTransferTokens(
+    function removeLiquidityETHSupportingFeeOnTransferTokens(
         address token,
         bool stable,
         uint liquidity,
         uint amountTokenMin,
-        uint amountTLOSMin,
+        uint amountETHMin,
         address to,
         uint deadline
-    ) public ensure(deadline) returns (uint amountToken, uint amountTLOS) {
-        (amountToken, amountTLOS) = removeLiquidity(
+    ) public ensure(deadline) returns (uint amountToken, uint amountETH) {
+        (amountToken, amountETH) = removeLiquidity(
             token,
-            address(wtlos),
+            address(weth),
             stable,
             liquidity,
             amountTokenMin,
-            amountTLOSMin,
+            amountETHMin,
             address(this),
             deadline
         );
         _safeTransfer(token, to, IERC20(token).balanceOf(address(this)));
-        wtlos.withdraw(amountTLOS);
-        _safeTransferTLOS(to, amountTLOS);
+        weth.withdraw(amountETH);
+        _safeTransferETH(to, amountETH);
     }
     
-    function removeLiquidityTLOSWithPermitSupportingFeeOnTransferTokens(
+    function removeLiquidityETHWithPermitSupportingFeeOnTransferTokens(
         address token,
         bool stable,
         uint liquidity,
         uint amountTokenMin,
-        uint amountTLOSMin,
+        uint amountETHMin,
         address to,
         uint deadline,
         bool approveMax, uint8 v, bytes32 r, bytes32 s
-    ) external returns (uint amountToken, uint amountTLOS) {
-        address pair = pairFor(token, address(wtlos), stable);
+    ) external returns (uint amountToken, uint amountETH) {
+        address pair = pairFor(token, address(weth), stable);
         uint value = approveMax ? type(uint).max : liquidity;
         IPair(pair).permit(msg.sender, address(this), value, deadline, v, r, s);
-        (amountToken, amountTLOS) = removeLiquidityTLOSSupportingFeeOnTransferTokens(
-            token, stable, liquidity, amountTokenMin, amountTLOSMin, to, deadline
+        (amountToken, amountETH) = removeLiquidityETHSupportingFeeOnTransferTokens(
+            token, stable, liquidity, amountTokenMin, amountETHMin, to, deadline
         );
     }
     
@@ -507,7 +508,7 @@ contract Router {
         );
     }
     
-    function swapExactTLOSForTokensSupportingFeeOnTransferTokens(
+    function swapExactETHForTokensSupportingFeeOnTransferTokens(
         uint amountOutMin,
         route[] calldata routes,
         address to,
@@ -517,10 +518,10 @@ contract Router {
     payable
     ensure(deadline)
     {
-        require(routes[0].from == address(wtlos), 'BaseV1Router: INVALID_PATH');
+        require(routes[0].from == address(weth), 'BaseV1Router: INVALID_PATH');
         uint amountIn = msg.value;
-        wtlos.deposit{value: amountIn}();
-        assert(wtlos.transfer(pairFor(routes[0].from, routes[0].to, routes[0].stable), amountIn));
+        weth.deposit{value: amountIn}();
+        assert(weth.transfer(pairFor(routes[0].from, routes[0].to, routes[0].stable), amountIn));
         uint balanceBefore = IERC20(routes[routes.length - 1].to).balanceOf(to);
         _swapSupportingFeeOnTransferTokens(routes, to);
         require(
@@ -529,7 +530,7 @@ contract Router {
         );
     }
     
-    function swapExactTokensForTLOSSupportingFeeOnTransferTokens(
+    function swapExactTokensForETHSupportingFeeOnTransferTokens(
         uint amountIn,
         uint amountOutMin,
         route[] calldata routes,
@@ -539,14 +540,14 @@ contract Router {
     external
     ensure(deadline)
     {
-        require(routes[routes.length - 1].to == address(wtlos), 'BaseV1Router: INVALID_PATH');
+        require(routes[routes.length - 1].to == address(weth), 'BaseV1Router: INVALID_PATH');
         _safeTransferFrom(
             routes[0].from, msg.sender, pairFor(routes[0].from, routes[0].to, routes[0].stable), amountIn
         );
         _swapSupportingFeeOnTransferTokens(routes, address(this));
-        uint amountOut = IERC20(address(wtlos)).balanceOf(address(this));
+        uint amountOut = IERC20(address(weth)).balanceOf(address(this));
         require(amountOut >= amountOutMin, 'BaseV1Router: INSUFFICIENT_OUTPUT_AMOUNT');
-        wtlos.withdraw(amountOut);
-        _safeTransferTLOS(to, amountOut);
+        weth.withdraw(amountOut);
+        _safeTransferETH(to, amountOut);
     }
 }
