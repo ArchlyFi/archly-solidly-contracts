@@ -2,10 +2,10 @@
 pragma solidity 0.8.22;
 
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-import "./interfaces/IVotingEscrow.sol";
-import "./interfaces/IUnderlying.sol";
-import "./interfaces/IVoter.sol";
-import "./interfaces/IVotingEscrowDistributor.sol";
+import {IVotingEscrow} from "./interfaces/IVotingEscrow.sol";
+import {IUnderlying} from "./interfaces/IUnderlying.sol";
+import {IVoter} from "./interfaces/IVoter.sol";
+import {IVotingEscrowDistributor} from "./interfaces/IVotingEscrowDistributor.sol";
 
 // codifies the minting rules as per ve(3,3), abstracted from the token to support any token that allows minting
 

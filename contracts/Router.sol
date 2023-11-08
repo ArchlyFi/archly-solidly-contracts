@@ -4,9 +4,9 @@ pragma solidity 0.8.22;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
-import "./interfaces/IPairFactory.sol";
-import "./interfaces/IPair.sol";
-import "./interfaces/IWETH.sol";
+import {IPairFactory} from "./interfaces/IPairFactory.sol";
+import {IPair} from "./interfaces/IPair.sol";
+import {IWETH} from "./interfaces/IWETH.sol";
 
 contract Router {
     

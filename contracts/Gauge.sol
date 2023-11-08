@@ -3,10 +3,10 @@ pragma solidity 0.8.22;
 
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "./interfaces/IVotingEscrow.sol";
-import "./interfaces/IPair.sol";
-import "./interfaces/IBribe.sol";
-import "./interfaces/IVoter.sol";
+import {IVotingEscrow} from "./interfaces/IVotingEscrow.sol";
+import {IPair} from "./interfaces/IPair.sol";
+import {IBribe} from "./interfaces/IBribe.sol";
+import {IVoter} from "./interfaces/IVoter.sol";
 
 // Gauges are used to incentivize pools, they emit reward tokens over 7 days for staked LP tokens
 contract Gauge {

@@ -2,10 +2,10 @@
 pragma solidity 0.8.22;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "./interfaces/IERC721.sol";
-import "./interfaces/IERC721Receiver.sol";
-import "./interfaces/IERC721Metadata.sol";
-import "./interfaces/IVeArtProxy.sol";
+import {IERC721} from "./interfaces/IERC721.sol";
+import {IERC721Receiver} from "./interfaces/IERC721Receiver.sol";
+import {IERC721Metadata} from "./interfaces/IERC721Metadata.sol";
+import {IVeArtProxy} from "./interfaces/IVeArtProxy.sol";
 
 /**
 @title Voting Escrow

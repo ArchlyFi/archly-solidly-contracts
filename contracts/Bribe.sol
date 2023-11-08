@@ -3,8 +3,8 @@ pragma solidity 0.8.22;
 
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import './interfaces/IVotingEscrow.sol';
-import './interfaces/IVoter.sol';
+import {IVotingEscrow} from "./interfaces/IVotingEscrow.sol";
+import {IVoter} from "./interfaces/IVoter.sol";
 
 // Bribes pay out rewards for a given pool based on the votes that were received from the user (goes hand in hand with BaseV1Gauges.vote())
 contract Bribe {

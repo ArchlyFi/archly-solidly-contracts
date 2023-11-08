@@ -4,9 +4,9 @@ pragma solidity 0.8.22;
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import "./interfaces/ICallee.sol";
-import "./interfaces/IPairFactory.sol";
-import "./Fees.sol";
+import {ICallee} from "./interfaces/ICallee.sol";
+import {IPairFactory} from "./interfaces/IPairFactory.sol";
+import {Fees} from "./Fees.sol";
 
 // The base pair of pools, either stable or volatile
 contract Pair {
