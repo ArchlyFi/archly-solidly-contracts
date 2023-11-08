@@ -3,7 +3,7 @@ pragma solidity 0.8.22;
 
 import './Gauge.sol';
 
-contract BaseV1GaugeFactory {
+contract GaugeFactory {
     address public last_gauge;
 
     // @param _stake address of the LP tokens

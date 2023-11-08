@@ -3,12 +3,12 @@ pragma solidity 0.8.22;
 
 import './interfaces/IERC20.sol';
 import './libraries/Math.sol';
-import './interfaces/IBaseV1Callee.sol';
-import './interfaces/IBaseV1Factory.sol';
-import './BaseV1Fees.sol';
+import './interfaces/ICallee.sol';
+import './interfaces/IPairFactory.sol';
+import './Fees.sol';
 
 // The base pair of pools, either stable or volatile
-contract BaseV1Pair {
+contract Pair {
 
     string public name;
     string public symbol;
@@ -69,7 +69,7 @@ contract BaseV1Pair {
     mapping(address => uint) public claimable0;
     mapping(address => uint) public claimable1;
 
-    event Fees(address indexed sender, uint amount0, uint amount1);
+    event Fee(address indexed sender, uint amount0, uint amount1);
     event Mint(address indexed sender, uint amount0, uint amount1);
     event Burn(address indexed sender, uint amount0, uint amount1, address indexed to);
     event Swap(
@@ -88,9 +88,9 @@ contract BaseV1Pair {
 
     constructor() {
         factory = msg.sender;
-        (address _token0, address _token1, bool _stable) = IBaseV1Factory(msg.sender).getInitializable();
+        (address _token0, address _token1, bool _stable) = IPairFactory(msg.sender).getInitializable();
         (token0, token1, stable) = (_token0, _token1, _stable);
-        fees = address(new BaseV1Fees(_token0, _token1));
+        fees = address(new Fees(_token0, _token1));
         if (_stable) {
             name = string(abi.encodePacked("StableV1 AMM - ", IERC20(_token0).symbol(), "/", IERC20(_token1).symbol()));
             symbol = string(abi.encodePacked("sAMM-", IERC20(_token0).symbol(), "/", IERC20(_token1).symbol()));
@@ -141,7 +141,7 @@ contract BaseV1Pair {
             claimable0[msg.sender] = 0;
             claimable1[msg.sender] = 0;
 
-            BaseV1Fees(fees).claimFeesFor(msg.sender, claimed0, claimed1);
+            Fees(fees).claimFeesFor(msg.sender, claimed0, claimed1);
 
             emit Claim(msg.sender, msg.sender, claimed0, claimed1);
         }
@@ -149,12 +149,12 @@ contract BaseV1Pair {
 
     // Accrue fees on token0
     function _update0(uint amount) internal {
-        _safeTransfer(token0, fees, amount); // transfer the fees out to BaseV1Fees
+        _safeTransfer(token0, fees, amount); // transfer the fees out to Fees
         uint256 _ratio = amount * 1e18 / totalSupply; // 1e18 adjustment is removed during claim
         if (_ratio > 0) {
             index0 += _ratio;
         }
-        emit Fees(msg.sender, amount, 0);
+        emit Fee(msg.sender, amount, 0);
     }
 
     // Accrue fees on token1
@@ -164,7 +164,7 @@ contract BaseV1Pair {
         if (_ratio > 0) {
             index1 += _ratio;
         }
-        emit Fees(msg.sender, 0, amount);
+        emit Fee(msg.sender, 0, amount);
     }
 
     // this function MUST be called on any balance changes, otherwise can be used to infinitely claim fees
@@ -332,7 +332,7 @@ contract BaseV1Pair {
 
     // this low-level function should be called from a contract which performs important safety checks
     function swap(uint amount0Out, uint amount1Out, address to, bytes calldata data) external lock {
-        require(!IBaseV1Factory(factory).isPaused());
+        require(!IPairFactory(factory).isPaused());
         require(amount0Out > 0 || amount1Out > 0, 'IOA'); // BaseV1: INSUFFICIENT_OUTPUT_AMOUNT
         (uint _reserve0, uint _reserve1) =  (reserve0, reserve1);
         require(amount0Out < _reserve0 && amount1Out < _reserve1, 'IL'); // BaseV1: INSUFFICIENT_LIQUIDITY
@@ -344,7 +344,7 @@ contract BaseV1Pair {
         require(to != _token0 && to != _token1, 'IT'); // BaseV1: INVALID_TO
         if (amount0Out > 0) _safeTransfer(_token0, to, amount0Out); // optimistically transfer tokens
         if (amount1Out > 0) _safeTransfer(_token1, to, amount1Out); // optimistically transfer tokens
-        if (data.length > 0) IBaseV1Callee(to).hook(msg.sender, amount0Out, amount1Out, data); // callback, used for flash loans
+        if (data.length > 0) ICallee(to).hook(msg.sender, amount0Out, amount1Out, data); // callback, used for flash loans
         _balance0 = IERC20(_token0).balanceOf(address(this));
         _balance1 = IERC20(_token1).balanceOf(address(this));
         }
@@ -353,8 +353,8 @@ contract BaseV1Pair {
         require(amount0In > 0 || amount1In > 0, 'IIA'); // BaseV1: INSUFFICIENT_INPUT_AMOUNT
         { // scope for reserve{0,1}Adjusted, avoids stack too deep errors
         (address _token0, address _token1) = (token0, token1);
-        if (amount0In > 0) _update0(amount0In * IBaseV1Factory(factory).getFee(stable) / 10000); // accrue fees for token0 and move them out of pool
-        if (amount1In > 0) _update1(amount1In * IBaseV1Factory(factory).getFee(stable) / 10000); // accrue fees for token1 and move them out of pool
+        if (amount0In > 0) _update0(amount0In * IPairFactory(factory).getFee(stable) / 10000); // accrue fees for token0 and move them out of pool
+        if (amount1In > 0) _update1(amount1In * IPairFactory(factory).getFee(stable) / 10000); // accrue fees for token1 and move them out of pool
         _balance0 = IERC20(_token0).balanceOf(address(this)); // since we removed tokens, we need to reconfirm balances, can also simply use previous balance - amountIn/ 10000, but doing balanceOf again as safety check
         _balance1 = IERC20(_token1).balanceOf(address(this));
         // The curve, either x3y+y3x for stable pools, or x*y for volatile pools
@@ -411,7 +411,7 @@ contract BaseV1Pair {
 
     function getAmountOut(uint amountIn, address tokenIn) external view returns (uint) {
         (uint _reserve0, uint _reserve1) = (reserve0, reserve1);
-        amountIn -= amountIn * IBaseV1Factory(factory).getFee(stable) / 10000; // remove fee from amount received
+        amountIn -= amountIn * IPairFactory(factory).getFee(stable) / 10000; // remove fee from amount received
         return _getAmountOut(amountIn, tokenIn, _reserve0, _reserve1);
     }
 

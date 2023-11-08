@@ -4,15 +4,15 @@ pragma solidity 0.8.22;
 import './libraries/Math.sol';
 import './interfaces/IERC20.sol';
 import './interfaces/IVotingEscrow.sol';
-import './interfaces/IBaseV1Factory.sol';
-import './interfaces/IBaseV1Core.sol';
-import './interfaces/IBaseV1GaugeFactory.sol';
-import './interfaces/IBaseV1BribeFactory.sol';
+import './interfaces/IPairFactory.sol';
+import './interfaces/IPair.sol';
+import './interfaces/IGaugeFactory.sol';
+import './interfaces/IBribeFactory.sol';
 import './interfaces/IGauge.sol';
 import './interfaces/IBribe.sol';
 import './interfaces/IMinter.sol';
 
-contract BaseV1Voter {
+contract Voter {
 
     address public immutable _ve; // the ve token that governs these contracts
     address public immutable factory; // the BaseV1Factory
@@ -178,9 +178,6 @@ contract BaseV1Voter {
         delete gaugeVote[_tokenId];
     }
 
-    // @param _tokenId the ID of the NFT to poke
-    // @notice To be called on voters abusing their voting power
-    // @notice _weights are the same as the last ID's vote !
     function poke(uint _tokenId) external {
         require(IVotingEscrow(_ve).isApprovedOrOwner(msg.sender, _tokenId));
         address[] memory _gaugeVote = gaugeVote[_tokenId];
@@ -265,11 +262,11 @@ contract BaseV1Voter {
 
     function createGauge(address _pair) external returns (address) {
         require(gauges[_pair] == address(0x0), "exists");
-        require(IBaseV1Factory(factory).isPair(_pair), "!pair");
-        (address _tokenA, address _tokenB) = IBaseV1Core(_pair).tokens();
+        require(IPairFactory(factory).isPair(_pair), "!pair");
+        (address _tokenA, address _tokenB) = IPair(_pair).tokens();
         require(isWhitelisted[_tokenA] && isWhitelisted[_tokenB], "!whitelisted");
-        address _bribe = IBaseV1BribeFactory(bribeFactory).createBribe();
-        address _gauge = IBaseV1GaugeFactory(gaugeFactory).createGauge(_pair, _bribe, _ve);
+        address _bribe = IBribeFactory(bribeFactory).createBribe();
+        address _gauge = IGaugeFactory(gaugeFactory).createGauge(_pair, _bribe, _ve);
         IERC20(base).approve(_gauge, type(uint).max);
         bribes[_gauge] = _bribe;
         gauges[_pair] = _gauge;

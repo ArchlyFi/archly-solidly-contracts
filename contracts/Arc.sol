@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.22;
 
-contract BaseV1 {
+import {Ownable2Step} from "@openzeppelin/contracts/access/Ownable2Step.sol";
+import {Pausable} from "@openzeppelin/contracts/security/Pausable.sol";
+
+contract Arc is Ownable2Step, Pausable {
 
     string public constant symbol = "Arc";
     string public constant name = "Archly";
@@ -11,20 +14,32 @@ contract BaseV1 {
     mapping(address => uint) public balanceOf;
     mapping(address => mapping(address => uint)) public allowance;
 
-    address public minter;
+    mapping(address => bool) public minters;
 
     event Transfer(address indexed from, address indexed to, uint value);
     event Approval(address indexed owner, address indexed spender, uint value);
 
     constructor() {
-        minter = msg.sender;
+        minters[msg.sender] = true;
         _mint(msg.sender, 0);
     }
+    
+    function pause() public onlyOwner
+    {
+        _pause();
+    }
+    
+    function unpause() public onlyOwner
+    {
+        _unpause();
+    }
 
-    // No checks as its meant to be once off to set minting rights to BaseV1 Minter
-    function setMinter(address _minter) external {
-        require(msg.sender == minter);
-        minter = _minter;
+    function addMinter(address _minter) external onlyOwner {
+        minters[_minter] = true;
+    }
+    
+    function removeMinter(address _minter) external onlyOwner {
+        minters[_minter] = false;
     }
 
     function approve(address _spender, uint _value) external returns (bool) {
@@ -60,11 +75,11 @@ contract BaseV1 {
         return true;
     }
 
-    function transfer(address _to, uint _value) external returns (bool) {
+    function transfer(address _to, uint _value) external whenNotPaused returns (bool) {
         return _transfer(msg.sender, _to, _value);
     }
 
-    function transferFrom(address _from, address _to, uint _value) external returns (bool) {
+    function transferFrom(address _from, address _to, uint _value) external whenNotPaused returns (bool) {
         uint allowed_from = allowance[_from][msg.sender];
         if (allowed_from != type(uint).max) {
             allowance[_from][msg.sender] -= _value;
@@ -72,13 +87,13 @@ contract BaseV1 {
         return _transfer(_from, _to, _value);
     }
 
-    function mint(address account, uint amount) external returns (bool) {
-        require(msg.sender == minter);
+    function mint(address account, uint amount) external whenNotPaused returns (bool) {
+        require(minters[msg.sender], 'Must be called by a minter');
         _mint(account, amount);
         return true;
     }
     
-    function burn(uint amount) external returns (bool) {
+    function burn(uint amount) external whenNotPaused returns (bool) {
         require(balanceOf[msg.sender] >= amount);
         _burn(msg.sender, amount);
         return true;

@@ -1,14 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.22;
 
-import './interfaces/IBaseV1Factory.sol';
-import './interfaces/IBaseV1Pair.sol';
+import './interfaces/IPairFactory.sol';
+import './interfaces/IPair.sol';
 import './interfaces/IERC20.sol';
 import './interfaces/IWTLOS.sol';
 import './libraries/Math.sol';
 
-contract BaseV1Router01 {
-
+contract Router {
+    
+    using Math for uint;
+    
     struct route {
         address from;
         address to;
@@ -27,7 +29,7 @@ contract BaseV1Router01 {
 
     constructor(address _factory, address _wtlos) {
         factory = _factory;
-        pairCodeHash = IBaseV1Factory(_factory).pairCodeHash();
+        pairCodeHash = IPairFactory(_factory).pairCodeHash();
         wtlos = IWTLOS(_wtlos);
     }
 
@@ -62,7 +64,7 @@ contract BaseV1Router01 {
     // fetches and sorts the reserves for a pair
     function getReserves(address tokenA, address tokenB, bool stable) public view returns (uint reserveA, uint reserveB) {
         (address token0,) = sortTokens(tokenA, tokenB);
-        (uint reserve0, uint reserve1,) = IBaseV1Pair(pairFor(tokenA, tokenB, stable)).getReserves();
+        (uint reserve0, uint reserve1,) = IPair(pairFor(tokenA, tokenB, stable)).getReserves();
         (reserveA, reserveB) = tokenA == token0 ? (reserve0, reserve1) : (reserve1, reserve0);
     }
 
@@ -71,12 +73,12 @@ contract BaseV1Router01 {
         address pair = pairFor(tokenIn, tokenOut, true);
         uint amountStable;
         uint amountVolatile;
-        if (IBaseV1Factory(factory).isPair(pair)) {
-            amountStable = IBaseV1Pair(pair).getAmountOut(amountIn, tokenIn);
+        if (IPairFactory(factory).isPair(pair)) {
+            amountStable = IPair(pair).getAmountOut(amountIn, tokenIn);
         }
         pair = pairFor(tokenIn, tokenOut, false);
-        if (IBaseV1Factory(factory).isPair(pair)) {
-            amountVolatile = IBaseV1Pair(pair).getAmountOut(amountIn, tokenIn);
+        if (IPairFactory(factory).isPair(pair)) {
+            amountVolatile = IPair(pair).getAmountOut(amountIn, tokenIn);
         }
         return amountStable > amountVolatile ? (amountStable, true) : (amountVolatile, false);
     }
@@ -88,14 +90,14 @@ contract BaseV1Router01 {
         amounts[0] = amountIn;
         for (uint i = 0; i < routes.length; i++) {
             address pair = pairFor(routes[i].from, routes[i].to, routes[i].stable);
-            if (IBaseV1Factory(factory).isPair(pair)) {
-                amounts[i+1] = IBaseV1Pair(pair).getAmountOut(amounts[i], routes[i].from);
+            if (IPairFactory(factory).isPair(pair)) {
+                amounts[i+1] = IPair(pair).getAmountOut(amounts[i], routes[i].from);
             }
         }
     }
 
     function isPair(address pair) external view returns (bool) {
-        return IBaseV1Factory(factory).isPair(pair);
+        return IPairFactory(factory).isPair(pair);
     }
 
     function quoteAddLiquidity(
@@ -106,7 +108,7 @@ contract BaseV1Router01 {
         uint amountBDesired
     ) external view returns (uint amountA, uint amountB, uint liquidity) {
         // create the pair if it doesn't exist yet
-        address _pair = IBaseV1Factory(factory).getPair(tokenA, tokenB, stable);
+        address _pair = IPairFactory(factory).getPair(tokenA, tokenB, stable);
         (uint reserveA, uint reserveB) = (0,0);
         uint _totalSupply = 0;
         if (_pair != address(0)) {
@@ -137,7 +139,7 @@ contract BaseV1Router01 {
         uint liquidity
     ) external view returns (uint amountA, uint amountB) {
         // create the pair if it doesn't exist yet
-        address _pair = IBaseV1Factory(factory).getPair(tokenA, tokenB, stable);
+        address _pair = IPairFactory(factory).getPair(tokenA, tokenB, stable);
 
         if (_pair == address(0)) {
             return (0,0);
@@ -163,9 +165,9 @@ contract BaseV1Router01 {
         require(amountADesired >= amountAMin);
         require(amountBDesired >= amountBMin);
         // create the pair if it doesn't exist yet
-        address _pair = IBaseV1Factory(factory).getPair(tokenA, tokenB, stable);
+        address _pair = IPairFactory(factory).getPair(tokenA, tokenB, stable);
         if (_pair == address(0)) {
-            _pair = IBaseV1Factory(factory).createPair(tokenA, tokenB, stable);
+            _pair = IPairFactory(factory).createPair(tokenA, tokenB, stable);
         }
         (uint reserveA, uint reserveB) = getReserves(tokenA, tokenB, stable);
         if (reserveA == 0 && reserveB == 0) {
@@ -199,7 +201,7 @@ contract BaseV1Router01 {
         address pair = pairFor(tokenA, tokenB, stable);
         _safeTransferFrom(tokenA, msg.sender, pair, amountA);
         _safeTransferFrom(tokenB, msg.sender, pair, amountB);
-        liquidity = IBaseV1Pair(pair).mint(to);
+        liquidity = IPair(pair).mint(to);
     }
 
     function addLiquidityTLOS(
@@ -224,7 +226,7 @@ contract BaseV1Router01 {
         _safeTransferFrom(token, msg.sender, pair, amountToken);
         wtlos.deposit{value: amountTLOS}();
         assert(wtlos.transfer(pair, amountTLOS));
-        liquidity = IBaseV1Pair(pair).mint(to);
+        liquidity = IPair(pair).mint(to);
         // refund dust eth, if any
         if (msg.value > amountTLOS) _safeTransferTLOS(msg.sender, msg.value - amountTLOS);
     }
@@ -241,8 +243,8 @@ contract BaseV1Router01 {
         uint deadline
     ) public ensure(deadline) returns (uint amountA, uint amountB) {
         address pair = pairFor(tokenA, tokenB, stable);
-        require(IBaseV1Pair(pair).transferFrom(msg.sender, pair, liquidity)); // send liquidity to pair
-        (uint amount0, uint amount1) = IBaseV1Pair(pair).burn(to);
+        require(IPair(pair).transferFrom(msg.sender, pair, liquidity)); // send liquidity to pair
+        (uint amount0, uint amount1) = IPair(pair).burn(to);
         (address token0,) = sortTokens(tokenA, tokenB);
         (amountA, amountB) = tokenA == token0 ? (amount0, amount1) : (amount1, amount0);
         require(amountA >= amountAMin, 'BaseV1Router: INSUFFICIENT_A_AMOUNT');
@@ -287,7 +289,7 @@ contract BaseV1Router01 {
         address pair = pairFor(tokenA, tokenB, stable);
         {
             uint value = approveMax ? type(uint).max : liquidity;
-            IBaseV1Pair(pair).permit(msg.sender, address(this), value, deadline, v, r, s);
+            IPair(pair).permit(msg.sender, address(this), value, deadline, v, r, s);
         }
 
         (amountA, amountB) = removeLiquidity(tokenA, tokenB, stable, liquidity, amountAMin, amountBMin, to, deadline);
@@ -305,7 +307,7 @@ contract BaseV1Router01 {
     ) external returns (uint amountToken, uint amountTLOS) {
         address pair = pairFor(token, address(wtlos), stable);
         uint value = approveMax ? type(uint).max : liquidity;
-        IBaseV1Pair(pair).permit(msg.sender, address(this), value, deadline, v, r, s);
+        IPair(pair).permit(msg.sender, address(this), value, deadline, v, r, s);
         (amountToken, amountTLOS) = removeLiquidityTLOS(token, stable, liquidity, amountTokenMin, amountTLOSMin, to, deadline);
     }
 
@@ -317,7 +319,7 @@ contract BaseV1Router01 {
             uint amountOut = amounts[i + 1];
             (uint amount0Out, uint amount1Out) = routes[i].from == token0 ? (uint(0), amountOut) : (amountOut, uint(0));
             address to = i < routes.length - 1 ? pairFor(routes[i+1].from, routes[i+1].to, routes[i+1].stable) : _to;
-            IBaseV1Pair(pairFor(routes[i].from, routes[i].to, routes[i].stable)).swap(
+            IPair(pairFor(routes[i].from, routes[i].to, routes[i].stable)).swap(
                 amount0Out, amount1Out, to, new bytes(0)
             );
         }
@@ -417,5 +419,134 @@ contract BaseV1Router01 {
         (bool success, bytes memory data) =
         token.call(abi.encodeWithSelector(IERC20.transferFrom.selector, from, to, value));
         require(success && (data.length == 0 || abi.decode(data, (bool))));
+    }
+    
+    // **** REMOVE LIQUIDITY (supporting fee-on-transfer tokens)****
+    function removeLiquidityTLOSSupportingFeeOnTransferTokens(
+        address token,
+        bool stable,
+        uint liquidity,
+        uint amountTokenMin,
+        uint amountTLOSMin,
+        address to,
+        uint deadline
+    ) public ensure(deadline) returns (uint amountToken, uint amountTLOS) {
+        (amountToken, amountTLOS) = removeLiquidity(
+            token,
+            address(wtlos),
+            stable,
+            liquidity,
+            amountTokenMin,
+            amountTLOSMin,
+            address(this),
+            deadline
+        );
+        _safeTransfer(token, to, IERC20(token).balanceOf(address(this)));
+        wtlos.withdraw(amountTLOS);
+        _safeTransferTLOS(to, amountTLOS);
+    }
+    
+    function removeLiquidityTLOSWithPermitSupportingFeeOnTransferTokens(
+        address token,
+        bool stable,
+        uint liquidity,
+        uint amountTokenMin,
+        uint amountTLOSMin,
+        address to,
+        uint deadline,
+        bool approveMax, uint8 v, bytes32 r, bytes32 s
+    ) external returns (uint amountToken, uint amountTLOS) {
+        address pair = pairFor(token, address(wtlos), stable);
+        uint value = approveMax ? type(uint).max : liquidity;
+        IPair(pair).permit(msg.sender, address(this), value, deadline, v, r, s);
+        (amountToken, amountTLOS) = removeLiquidityTLOSSupportingFeeOnTransferTokens(
+            token, stable, liquidity, amountTokenMin, amountTLOSMin, to, deadline
+        );
+    }
+    
+    // **** SWAP (supporting fee-on-transfer tokens) ****
+    // requires the initial amount to have already been sent to the first pair
+    function _swapSupportingFeeOnTransferTokens(route[] memory routes, address _to) internal virtual {
+        for (uint i; i < routes.length; i++) {
+            (address input, address output,) = (routes[i].from, routes[i].to, routes[i].stable);
+            (address token0,) = sortTokens(input, output);
+            IPair pair = IPair(pairFor(routes[i].from, routes[i].to, routes[i].stable));
+            uint amountInput;
+            uint amountOutput;
+            { // scope to avoid stack too deep errors
+                (uint reserve0, uint reserve1,) = pair.getReserves();
+                (uint reserveInput,) = input == token0 ? (reserve0, reserve1) : (reserve1, reserve0);
+                amountInput = IERC20(input).balanceOf(address(pair)).sub(reserveInput);
+                //(amountOutput,) = getAmountOut(amountInput, input, output, stable);
+                amountOutput = pair.getAmountOut(amountInput, input);
+            }
+            (uint amount0Out, uint amount1Out) = input == token0 ? (uint(0), amountOutput) : (amountOutput, uint(0));
+            address to = i < routes.length - 1 ? pairFor(routes[i+1].from, routes[i+1].to, routes[i+1].stable) : _to;
+            pair.swap(amount0Out, amount1Out, to, new bytes(0));
+        }
+    }
+    
+    function swapExactTokensForTokensSupportingFeeOnTransferTokens(
+        uint amountIn,
+        uint amountOutMin,
+        route[] calldata routes,
+        address to,
+        uint deadline
+    ) external ensure(deadline) {
+        _safeTransferFrom(
+            routes[0].from,
+            msg.sender,
+            pairFor(routes[0].from, routes[0].to, routes[0].stable),
+            amountIn
+        );
+        uint balanceBefore = IERC20(routes[routes.length - 1].to).balanceOf(to);
+        _swapSupportingFeeOnTransferTokens(routes, to);
+        require(
+            IERC20(routes[routes.length - 1].to).balanceOf(to).sub(balanceBefore) >= amountOutMin,
+            'BaseV1Router: INSUFFICIENT_OUTPUT_AMOUNT'
+        );
+    }
+    
+    function swapExactTLOSForTokensSupportingFeeOnTransferTokens(
+        uint amountOutMin,
+        route[] calldata routes,
+        address to,
+        uint deadline
+    )
+    external
+    payable
+    ensure(deadline)
+    {
+        require(routes[0].from == address(wtlos), 'BaseV1Router: INVALID_PATH');
+        uint amountIn = msg.value;
+        wtlos.deposit{value: amountIn}();
+        assert(wtlos.transfer(pairFor(routes[0].from, routes[0].to, routes[0].stable), amountIn));
+        uint balanceBefore = IERC20(routes[routes.length - 1].to).balanceOf(to);
+        _swapSupportingFeeOnTransferTokens(routes, to);
+        require(
+            IERC20(routes[routes.length - 1].to).balanceOf(to).sub(balanceBefore) >= amountOutMin,
+            'BaseV1Router: INSUFFICIENT_OUTPUT_AMOUNT'
+        );
+    }
+    
+    function swapExactTokensForTLOSSupportingFeeOnTransferTokens(
+        uint amountIn,
+        uint amountOutMin,
+        route[] calldata routes,
+        address to,
+        uint deadline
+    )
+    external
+    ensure(deadline)
+    {
+        require(routes[routes.length - 1].to == address(wtlos), 'BaseV1Router: INVALID_PATH');
+        _safeTransferFrom(
+            routes[0].from, msg.sender, pairFor(routes[0].from, routes[0].to, routes[0].stable), amountIn
+        );
+        _swapSupportingFeeOnTransferTokens(routes, address(this));
+        uint amountOut = IERC20(address(wtlos)).balanceOf(address(this));
+        require(amountOut >= amountOutMin, 'BaseV1Router: INSUFFICIENT_OUTPUT_AMOUNT');
+        wtlos.withdraw(amountOut);
+        _safeTransferTLOS(to, amountOut);
     }
 }

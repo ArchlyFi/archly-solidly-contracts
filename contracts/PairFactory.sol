@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.22;
 
-import './BaseV1Pair.sol';
+import './Pair.sol';
 
-contract BaseV1Factory {
+contract PairFactory {
 
     bool public isPaused;
     address public pauser;
@@ -78,7 +78,7 @@ contract BaseV1Factory {
     }
 
     function pairCodeHash() external pure returns (bytes32) {
-        return keccak256(type(BaseV1Pair).creationCode);
+        return keccak256(type(Pair).creationCode);
     }
 
     function getInitializable() external view returns (address, address, bool) {
@@ -92,7 +92,7 @@ contract BaseV1Factory {
         require(getPair[token0][token1][stable] == address(0), 'PE'); // BaseV1: PAIR_EXISTS - single check is sufficient
         bytes32 salt = keccak256(abi.encodePacked(token0, token1, stable)); // notice salt includes stable as well, 3 parameters
         (_temp0, _temp1, _temp) = (token0, token1, stable);
-        pair = address(new BaseV1Pair{salt:salt}());
+        pair = address(new Pair{salt:salt}());
         getPair[token0][token1][stable] = pair;
         getPair[token1][token0][stable] = pair; // populate mapping in the reverse direction
         allPairs.push(pair);

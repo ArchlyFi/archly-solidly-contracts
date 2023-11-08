@@ -4,7 +4,7 @@ pragma solidity 0.8.22;
 import './libraries/Math.sol';
 import './interfaces/IERC20.sol';
 import './interfaces/IVotingEscrow.sol';
-import './interfaces/IBaseV1Voter.sol';
+import './interfaces/IVoter.sol';
 
 // Bribes pay out rewards for a given pool based on the votes that were received from the user (goes hand in hand with BaseV1Gauges.vote())
 contract Bribe {
@@ -53,7 +53,7 @@ contract Bribe {
 
     constructor(address _voter) {
         voter = _voter;
-        _ve = IBaseV1Voter(_voter)._ve();
+        _ve = IVoter(_voter)._ve();
     }
 
     // simple re-entrancy check
@@ -273,12 +273,13 @@ contract Bribe {
         return tokenRewardsPerEpoch[token][adjustedTstamp];
     }
 
-    // used to notify a gauge/bribe of a given reward, this can create griefing attacks by extending rewards
     function notifyRewardAmount(address token, uint amount) external lock {
         require(amount > 0, "invalid amount");
         if (!isReward[token]) {
-            require(IBaseV1Voter(voter).isWhitelisted(token), "bribe tokens must be whitelisted");
-            require(rewards.length < MAX_REWARD_TOKENS, "too many rewards tokens");
+          require(IVoter(voter).isWhitelisted(token), "bribe tokens must be whitelisted");
+          require(rewards.length < MAX_REWARD_TOKENS, "too many rewards tokens");
+          isReward[token] = true;
+          rewards.push(token);
         }
         
         // bribes kick in at the start of next bribe period
@@ -290,16 +291,11 @@ contract Bribe {
 
         periodFinish[token] = adjustedTstamp + DURATION;
 
-        if (!isReward[token]) {
-            isReward[token] = true;
-            rewards.push(token);
-        }
-
         emit NotifyReward(msg.sender, token, adjustedTstamp, amount);
     }
 
     function swapOutRewardToken(uint i, address oldToken, address newToken) external {
-        require(msg.sender == IBaseV1Voter(voter).admin());
+        require(msg.sender == IVoter(voter).admin(), 'only voter admin');
         require(rewards[i] == oldToken);
         isReward[oldToken] = false;
         isReward[newToken] = true;

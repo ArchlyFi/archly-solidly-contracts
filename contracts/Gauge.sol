@@ -4,10 +4,9 @@ pragma solidity 0.8.22;
 import './libraries/Math.sol';
 import './interfaces/IERC20.sol';
 import './interfaces/IVotingEscrow.sol';
-import './interfaces/IBaseV1Factory.sol';
-import './interfaces/IBaseV1Core.sol';
+import './interfaces/IPair.sol';
 import './interfaces/IBribe.sol';
-import './interfaces/IBaseV1Voter.sol';
+import './interfaces/IVoter.sol';
 
 // Gauges are used to incentivize pools, they emit reward tokens over 7 days for staked LP tokens
 contract Gauge {
@@ -112,11 +111,11 @@ contract Gauge {
     }
 
     function _claimFees() internal returns (uint claimed0, uint claimed1) {
-        (claimed0, claimed1) = IBaseV1Core(stake).claimFees();
+        (claimed0, claimed1) = IPair(stake).claimFees();
         if (claimed0 > 0 || claimed1 > 0) {
             uint _fees0 = fees0 + claimed0;
             uint _fees1 = fees1 + claimed1;
-            (address _token0, address _token1) = IBaseV1Core(stake).tokens();
+            (address _token0, address _token1) = IPair(stake).tokens();
             if (_fees0 > IBribe(bribe).left(_token0) && _fees0 / DURATION > 0) {
                 fees0 = 0;
                 _safeApprove(_token0, bribe, _fees0);
@@ -293,7 +292,7 @@ contract Gauge {
     function getReward(address account, address[] memory tokens) external lock {
         require(msg.sender == account || msg.sender == voter);
         _unlocked = 1;
-        IBaseV1Voter(voter).distribute(address(this));
+        IVoter(voter).distribute(address(this));
         _unlocked = 2;
 
         for (uint i = 0; i < tokens.length; i++) {
@@ -467,7 +466,7 @@ contract Gauge {
             require(IVotingEscrow(_ve).ownerOf(tokenId) == msg.sender);
             if (tokenIds[msg.sender] == 0) {
                 tokenIds[msg.sender] = tokenId;
-                IBaseV1Voter(voter).attachTokenToGauge(tokenId, msg.sender);
+                IVoter(voter).attachTokenToGauge(tokenId, msg.sender);
             }
             require(tokenIds[msg.sender] == tokenId);
         } else {
@@ -483,7 +482,7 @@ contract Gauge {
         _writeCheckpoint(msg.sender, _derivedBalance);
         _writeSupplyCheckpoint();
 
-        IBaseV1Voter(voter).emitDeposit(tokenId, msg.sender, amount);
+        IVoter(voter).emitDeposit(tokenId, msg.sender, amount);
         emit Deposit(msg.sender, tokenId, amount);
     }
 
@@ -509,7 +508,7 @@ contract Gauge {
         if (tokenId > 0) {
             require(tokenId == tokenIds[msg.sender]);
             tokenIds[msg.sender] = 0;
-            IBaseV1Voter(voter).detachTokenFromGauge(tokenId, msg.sender);
+            IVoter(voter).detachTokenFromGauge(tokenId, msg.sender);
         } else {
             tokenId = tokenIds[msg.sender];
         }
@@ -523,7 +522,7 @@ contract Gauge {
         _writeCheckpoint(msg.sender, derivedBalances[msg.sender]);
         _writeSupplyCheckpoint();
 
-        IBaseV1Voter(voter).emitWithdraw(tokenId, msg.sender, amount);
+        IVoter(voter).emitWithdraw(tokenId, msg.sender, amount);
         emit Withdraw(msg.sender, tokenId, amount);
     }
 
@@ -538,7 +537,7 @@ contract Gauge {
         require(amount > 0, "invalid amount");
         require(totalSupply > 0, "no tokens staked");
         if (!isReward[token]) {
-            require(IBaseV1Voter(voter).isReward(address(this), token), "rewards tokens must be whitelisted");
+            require(IVoter(voter).isReward(address(this), token), "rewards tokens must be whitelisted");
             require(rewards.length < MAX_REWARD_TOKENS, "too many rewards tokens");
             isReward[token] = true; 
             rewards.push(token);
@@ -566,7 +565,7 @@ contract Gauge {
     }
 
     function swapOutReward(uint i, address oldToken, address newToken) external {
-        require(msg.sender == IBaseV1Voter(voter).admin());
+        require(msg.sender == IVoter(voter).admin());
         require(rewards[i] == oldToken);
         isReward[oldToken] = false;
         isReward[newToken] = true;

@@ -4,12 +4,12 @@ pragma solidity 0.8.22;
 import './libraries/Math.sol';
 import './interfaces/IVotingEscrow.sol';
 import './interfaces/IUnderlying.sol';
-import './interfaces/IBaseV1Voter.sol';
+import './interfaces/IVoter.sol';
 import './interfaces/IVotingEscrowDistributor.sol';
 
 // codifies the minting rules as per ve(3,3), abstracted from the token to support any token that allows minting
 
-contract BaseV1Minter {
+contract Minter {
 
     uint internal constant week = 86400 * 7; // allows minting once per week (reset every Thursday 00:00 UTC)
     uint internal constant emission = 98;
@@ -17,7 +17,7 @@ contract BaseV1Minter {
     uint internal constant target_base = 100; // 2% per week target emission
     uint internal constant tail_base = 100; // 2% per week target emission
     IUnderlying public immutable _token;
-    IBaseV1Voter public immutable _voter;
+    IVoter public immutable _voter;
     IVotingEscrow public immutable _ve;
     IVotingEscrowDistributor public immutable _ve_dist;
     uint public weekly = 5000000e18;
@@ -41,7 +41,7 @@ contract BaseV1Minter {
         team = 0x0c5D52630c982aE81b78AB2954Ddc9EC2797bB9c;
         teamRate = 30; // 30 bps = 0.03%
         _token = IUnderlying(IVotingEscrow(__ve).token());
-        _voter = IBaseV1Voter(__voter);
+        _voter = IVoter(__voter);
         _ve = IVotingEscrow(__ve);
         _ve_dist = IVotingEscrowDistributor(__ve_dist);
         active_period = ((block.timestamp + (2 * week)) / week) * week;

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.22;
 
-interface IBaseV1Factory {
+interface IPairFactory {
     function allPairsLength() external view returns (uint);
     function isPair(address pair) external view returns (bool);
     function pairCodeHash() external pure returns (bytes32);

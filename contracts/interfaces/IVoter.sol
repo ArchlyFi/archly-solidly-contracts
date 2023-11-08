@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.22;
 
-interface IBaseV1Voter {
+interface IVoter {
 
     function attachTokenToGauge(uint tokenId, address account) external;
     function detachTokenFromGauge(uint tokenId, address account) external;

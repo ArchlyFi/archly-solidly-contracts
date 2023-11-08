@@ -4,7 +4,7 @@ pragma solidity 0.8.22;
 import './interfaces/IERC20.sol';
 
 // Base V1 Fees contract is used as a 1:1 pair relationship to split out fees, this ensures that the curve does not need to be modified for LP shares
-contract BaseV1Fees {
+contract Fees {
 
     address internal immutable pair; // The pair it is bonded to
     address internal immutable token0; // token0 of pair, saved localy and statically for gas optimization

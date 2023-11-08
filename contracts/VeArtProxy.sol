@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.22;
 
-import './libraries/Base64.sol';
+import {Base64} from "@openzeppelin/contracts/utils/Base64.sol";
 import './interfaces/IVeArtProxy.sol';
 
 contract VeArtProxy is IVeArtProxy {

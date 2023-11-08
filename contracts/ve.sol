@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.22;
 
-import './libraries/Base64.sol';
 import './interfaces/IERC721.sol';
 import './interfaces/IERC721Receiver.sol';
 import './interfaces/IERC721Metadata.sol';
