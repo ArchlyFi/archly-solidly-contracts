@@ -2,10 +2,10 @@
 pragma solidity 0.8.22;
 
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-import './interfaces/IVotingEscrow.sol';
-import './interfaces/IUnderlying.sol';
-import './interfaces/IVoter.sol';
-import './interfaces/IVotingEscrowDistributor.sol';
+import "./interfaces/IVotingEscrow.sol";
+import "./interfaces/IUnderlying.sol";
+import "./interfaces/IVoter.sol";
+import "./interfaces/IVotingEscrowDistributor.sol";
 
 // codifies the minting rules as per ve(3,3), abstracted from the token to support any token that allows minting
 
@@ -20,7 +20,7 @@ contract Minter {
     IVoter public immutable _voter;
     IVotingEscrow public immutable _ve;
     IVotingEscrowDistributor public immutable _ve_dist;
-    uint public weekly = 5000000e18;
+    uint public weekly = 1000000e18;
     uint public active_period;
     uint internal constant lock = 86400 * 7 * 52 * 4;
 

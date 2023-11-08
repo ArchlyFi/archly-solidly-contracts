@@ -2,7 +2,7 @@
 pragma solidity 0.8.22;
 
 import {Base64} from "@openzeppelin/contracts/utils/Base64.sol";
-import './interfaces/IVeArtProxy.sol';
+import "./interfaces/IVeArtProxy.sol";
 
 contract VeArtProxy is IVeArtProxy {
     function toString(uint value) internal pure returns (string memory) {

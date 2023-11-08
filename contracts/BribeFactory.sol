@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.22;
 
-import './Bribe.sol';
+import "./Bribe.sol";
 
 contract BribeFactory {
     address public last_bribe;

@@ -3,14 +3,14 @@ pragma solidity 0.8.22;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-import './interfaces/IVotingEscrow.sol';
-import './interfaces/IPairFactory.sol';
-import './interfaces/IPair.sol';
-import './interfaces/IGaugeFactory.sol';
-import './interfaces/IBribeFactory.sol';
-import './interfaces/IGauge.sol';
-import './interfaces/IBribe.sol';
-import './interfaces/IMinter.sol';
+import "./interfaces/IVotingEscrow.sol";
+import "./interfaces/IPairFactory.sol";
+import "./interfaces/IPair.sol";
+import "./interfaces/IGaugeFactory.sol";
+import "./interfaces/IBribeFactory.sol";
+import "./interfaces/IGauge.sol";
+import "./interfaces/IBribe.sol";
+import "./interfaces/IMinter.sol";
 
 contract Voter {
 
