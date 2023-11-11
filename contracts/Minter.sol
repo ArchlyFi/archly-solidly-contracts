@@ -12,15 +12,15 @@ import {IVotingEscrowDistributor} from "./interfaces/IVotingEscrowDistributor.so
 contract Minter {
 
     uint internal constant week = 86400 * 7; // allows minting once per week (reset every Thursday 00:00 UTC)
-    uint internal constant emission = 98;
-    uint internal constant tail_emission = 2;
-    uint internal constant target_base = 100; // 2% per week target emission
-    uint internal constant tail_base = 100; // 2% per week target emission
+    uint public emission = 9900;
+    uint public tail_emission = 100;
+    uint internal constant target_base = 10000; // 1% per week target emission
+    uint internal constant tail_base = 10000; // 1% per week target emission
     IUnderlying public immutable _token;
     IVoter public immutable _voter;
     IVotingEscrow public immutable _ve;
     IVotingEscrowDistributor public immutable _ve_dist;
-    uint public weekly = 1000000e18;
+    uint public weekly = 100000e18;
     uint public active_period;
     uint internal constant lock = 86400 * 7 * 52 * 4;
 
@@ -28,7 +28,11 @@ contract Minter {
     address public team;
     address public pendingTeam;
     uint public teamRate;
-    uint public constant MAX_TEAM_RATE = 50; // 50 bps = 0.05%
+    uint public rebaseRate;
+    uint public constant MAX_TEAM_RATE = 100; // 100 bps = 10%
+    uint public constant MAX_REBASE_RATE = 1000; // 1000 bps = 100%
+    
+    address[] internal excludedAddresses;
 
     event Mint(address indexed sender, uint weekly, uint circulating_supply, uint circulating_emission);
 
@@ -39,7 +43,8 @@ contract Minter {
     ) {
         initializer = msg.sender;
         team = 0x0c5D52630c982aE81b78AB2954Ddc9EC2797bB9c;
-        teamRate = 30; // 30 bps = 0.03%
+        teamRate = 50; // 50 bps = 5%
+        rebaseRate = 1000; // 1000 bps = 100%
         _token = IUnderlying(IVotingEscrow(__ve).token());
         _voter = IVoter(__voter);
         _ve = IVotingEscrow(__ve);
@@ -62,6 +67,15 @@ contract Minter {
         active_period = (block.timestamp / week) * week;
     }
     
+    function getExcludedAddresses() public view returns (address[] memory) {
+        return excludedAddresses;
+    }
+    
+    function setExcludedAddresses(address[] memory _excludedAddresses) public {
+        require(msg.sender == _voter.admin(), "not voter admin");
+        excludedAddresses = _excludedAddresses;
+    }
+
     function setTeam(address _team) external {
         require(msg.sender == team, "not team");
         pendingTeam = _team;
@@ -77,15 +91,42 @@ contract Minter {
         require(_teamRate <= MAX_TEAM_RATE, "rate too high");
         teamRate = _teamRate;
     }
+    
+    function setRebaseRate(uint _rebaseRate) external {
+        require(msg.sender == _voter.admin(), "not voter admin");
+        require(_rebaseRate <= MAX_REBASE_RATE, "rate too high");
+        rebaseRate = _rebaseRate;
+    }
+    
+    function setTailEmission(uint _tailEmission) external {
+        require(msg.sender == _voter.admin(), "not voter admin");
+        require(_tailEmission <= tail_base, "tail emission is too high");
+        tail_emission = _tailEmission;
+    }
+
+    function setEmission(uint _emission) external {
+        require(msg.sender == _voter.admin(), "not voter admin");
+        require(_emission <= target_base, "emission is too high");
+        emission = _emission;
+    }
+    
+    // calculates sum of all balances for excluded addresses
+    function excluded_circulating_supply() internal view returns (uint excludedCirculatingSupply) {
+        for (uint i = 0; i < excludedAddresses.length; i++) {
+            excludedCirculatingSupply += _token.balanceOf(excludedAddresses[i]);
+        }
+        
+        return excludedCirculatingSupply;
+    }
 
     // calculate circulating supply as total token supply - locked supply
     function circulating_supply() public view returns (uint) {
-        return _token.totalSupply() - _ve.totalSupply();
+        return (_token.totalSupply() - excluded_circulating_supply()) - _ve.totalSupply();
     }
 
     // emission calculation is 2% of available supply to mint adjusted by circulating / total supply
     function calculate_emission() public view returns (uint) {
-        return weekly * emission * circulating_supply() / target_base / _token.totalSupply();
+        return weekly * emission * circulating_supply() / target_base / (_token.totalSupply() - excluded_circulating_supply());
     }
 
     // weekly emission takes the max of calculated (aka target) emission versus circulating tail end emission
@@ -100,7 +141,7 @@ contract Minter {
 
     // calculate inflation and adjust ve balances accordingly
     function calculate_growth(uint _minted) public view returns (uint) {
-        return _ve.totalSupply() * _minted / _token.totalSupply();
+        return rebaseRate * (_ve.totalSupply() * _minted / (_token.totalSupply() - excluded_circulating_supply())) / 1000;
     }
 
     // update period can only be called once per cycle (1 week)
@@ -119,11 +160,16 @@ contract Minter {
                 _token.mint(address(this), _required - _balanceOf);
             }
 
-            require(_token.transfer(team, _teamEmissions));
-            require(_token.transfer(address(_ve_dist), _growth));
-            _ve_dist.checkpoint_token(); // checkpoint token balance that was just minted in ve_dist
-            _ve_dist.checkpoint_total_supply(); // checkpoint supply
-
+            if(_teamEmissions > 0) {
+                require(_token.transfer(team, _teamEmissions));
+            }
+            
+            if(_growth > 0) {
+                require(_token.transfer(address(_ve_dist), _growth));
+                _ve_dist.checkpoint_token(); // checkpoint token balance that was just minted in ve_dist
+                _ve_dist.checkpoint_total_supply(); // checkpoint supply
+            }
+            
             _token.approve(address(_voter), weekly);
             _voter.notifyRewardAmount(weekly);
 
@@ -131,5 +177,4 @@ contract Minter {
         }
         return _period;
     }
-
 }
