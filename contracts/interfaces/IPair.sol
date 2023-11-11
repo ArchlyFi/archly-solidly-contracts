@@ -8,6 +8,7 @@ interface IPair {
     function getReserves() external view returns (uint112 _reserve0, uint112 _reserve1, uint32 _blockTimestampLast);
     function mint(address to) external returns (uint liquidity);
     function permit(address owner, address spender, uint value, uint deadline, uint8 v, bytes32 r, bytes32 s) external;
+    function stable() external view returns (bool);
     function swap(uint amount0Out, uint amount1Out, address to, bytes calldata data) external;
     function tokens() external returns (address, address);
     function transferFrom(address src, address dst, uint amount) external returns (bool);

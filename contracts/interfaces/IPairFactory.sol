@@ -13,4 +13,5 @@ interface IPairFactory {
     function setPauser(address _pauser) external;
     function isPaused() external view returns (bool);
     function getFee(bool _stable) external view returns(uint256);
+    function getRealFee(address _pair) external view returns(uint256);
 }
