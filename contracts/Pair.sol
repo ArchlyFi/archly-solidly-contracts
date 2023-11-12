@@ -280,7 +280,10 @@ contract Pair {
             uint _reserve0 = (observations[nextIndex].reserve0Cumulative - observations[i].reserve0Cumulative) / timeElapsed;
             uint _reserve1 = (observations[nextIndex].reserve1Cumulative - observations[i].reserve1Cumulative) / timeElapsed;
             _prices[index] = _getAmountOut(amountIn, tokenIn, _reserve0, _reserve1);
-            index = index + 1;
+            // index < length; length cannot overflow
+            unchecked {
+                index = index + 1;
+            }
         }
         return _prices;
     }
@@ -301,7 +304,7 @@ contract Pair {
         } else {
             liquidity = Math.min(_amount0 * _totalSupply / _reserve0, _amount1 * _totalSupply / _reserve1);
         }
-        require(liquidity > 0, 'ILM'); // BaseV1: INSUFFICIENT_LIQUIDITY_MINTED
+        require(liquidity > 0, 'ILM'); // Pair: INSUFFICIENT_LIQUIDITY_MINTED
         _mint(to, liquidity);
 
         _update(_balance0, _balance1, _reserve0, _reserve1);
@@ -320,7 +323,7 @@ contract Pair {
         uint _totalSupply = totalSupply; // gas savings, must be defined here since totalSupply can update in _mintFee
         amount0 = _liquidity * _balance0 / _totalSupply; // using balances ensures pro-rata distribution
         amount1 = _liquidity * _balance1 / _totalSupply; // using balances ensures pro-rata distribution
-        require(amount0 > 0 && amount1 > 0, 'ILB'); // BaseV1: INSUFFICIENT_LIQUIDITY_BURNED
+        require(amount0 > 0 && amount1 > 0, 'ILB'); // Pair: INSUFFICIENT_LIQUIDITY_BURNED
         _burn(address(this), _liquidity);
         _safeTransfer(_token0, to, amount0);
         _safeTransfer(_token1, to, amount1);
@@ -334,15 +337,15 @@ contract Pair {
     // this low-level function should be called from a contract which performs important safety checks
     function swap(uint amount0Out, uint amount1Out, address to, bytes calldata data) external lock {
         require(!IPairFactory(factory).isPaused());
-        require(amount0Out > 0 || amount1Out > 0, 'IOA'); // BaseV1: INSUFFICIENT_OUTPUT_AMOUNT
+        require(amount0Out > 0 || amount1Out > 0, 'IOA'); // Pair: INSUFFICIENT_OUTPUT_AMOUNT
         (uint _reserve0, uint _reserve1) =  (reserve0, reserve1);
-        require(amount0Out < _reserve0 && amount1Out < _reserve1, 'IL'); // BaseV1: INSUFFICIENT_LIQUIDITY
+        require(amount0Out < _reserve0 && amount1Out < _reserve1, 'IL'); // Pair: INSUFFICIENT_LIQUIDITY
 
         uint _balance0;
         uint _balance1;
         { // scope for _token{0,1}, avoids stack too deep errors
         (address _token0, address _token1) = (token0, token1);
-        require(to != _token0 && to != _token1, 'IT'); // BaseV1: INVALID_TO
+        require(to != _token0 && to != _token1, 'IT'); // Pair: INVALID_TO
         if (amount0Out > 0) _safeTransfer(_token0, to, amount0Out); // optimistically transfer tokens
         if (amount1Out > 0) _safeTransfer(_token1, to, amount1Out); // optimistically transfer tokens
         if (data.length > 0) ICallee(to).hook(msg.sender, amount0Out, amount1Out, data); // callback, used for flash loans
@@ -351,7 +354,7 @@ contract Pair {
         }
         uint amount0In = _balance0 > _reserve0 - amount0Out ? _balance0 - (_reserve0 - amount0Out) : 0;
         uint amount1In = _balance1 > _reserve1 - amount1Out ? _balance1 - (_reserve1 - amount1Out) : 0;
-        require(amount0In > 0 || amount1In > 0, 'IIA'); // BaseV1: INSUFFICIENT_INPUT_AMOUNT
+        require(amount0In > 0 || amount1In > 0, 'IIA'); // Pair: INSUFFICIENT_INPUT_AMOUNT
         { // scope for reserve{0,1}Adjusted, avoids stack too deep errors
         (address _token0, address _token1) = (token0, token1);
         if (amount0In > 0) _update0(amount0In * IPairFactory(factory).getFee(stable) / 10000); // accrue fees for token0 and move them out of pool
@@ -359,7 +362,7 @@ contract Pair {
         _balance0 = IERC20(_token0).balanceOf(address(this)); // since we removed tokens, we need to reconfirm balances, can also simply use previous balance - amountIn/ 10000, but doing balanceOf again as safety check
         _balance1 = IERC20(_token1).balanceOf(address(this));
         // The curve, either x3y+y3x for stable pools, or x*y for volatile pools
-        require(_k(_balance0, _balance1) >= _k(_reserve0, _reserve1), 'K'); // BaseV1: K
+        require(_k(_balance0, _balance1) >= _k(_reserve0, _reserve1), 'K'); // Pair: K
         }
 
         _update(_balance0, _balance1, _reserve0, _reserve1);
@@ -465,12 +468,12 @@ contract Pair {
     }
 
     function permit(address owner, address spender, uint value, uint deadline, uint8 v, bytes32 r, bytes32 s) external {
-        require(deadline >= block.timestamp, 'BaseV1: EXPIRED');
+        require(deadline >= block.timestamp, 'Pair: EXPIRED');
         DOMAIN_SEPARATOR = keccak256(
             abi.encode(
                 keccak256('EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)'),
                 keccak256(bytes(name)),
-                keccak256('1'),
+                keccak256(bytes('1')),
                 block.chainid,
                 address(this)
             )
@@ -483,7 +486,7 @@ contract Pair {
             )
         );
         address recoveredAddress = ecrecover(digest, v, r, s);
-        require(recoveredAddress != address(0) && recoveredAddress == owner, 'BaseV1: INVALID_SIGNATURE');
+        require(recoveredAddress != address(0) && recoveredAddress == owner, 'Pair: INVALID_SIGNATURE');
         allowance[owner][spender] = value;
 
         emit Approval(owner, spender, value);

@@ -24,7 +24,7 @@ contract Router {
     bytes32 immutable pairCodeHash;
 
     modifier ensure(uint deadline) {
-        require(deadline >= block.timestamp, 'BaseV1Router: EXPIRED');
+        require(deadline >= block.timestamp, 'Router: EXPIRED');
         _;
     }
 
@@ -39,9 +39,9 @@ contract Router {
     }
 
     function sortTokens(address tokenA, address tokenB) public pure returns (address token0, address token1) {
-        require(tokenA != tokenB, 'BaseV1Router: IDENTICAL_ADDRESSES');
+        require(tokenA != tokenB, 'Router: IDENTICAL_ADDRESSES');
         (token0, token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
-        require(token0 != address(0), 'BaseV1Router: ZERO_ADDRESS');
+        require(token0 != address(0), 'Router: ZERO_ADDRESS');
     }
 
     // calculates the CREATE2 address for a pair without making any external calls
@@ -57,8 +57,8 @@ contract Router {
 
     // given some amount of an asset and pair reserves, returns an equivalent amount of the other asset
     function quoteLiquidity(uint amountA, uint reserveA, uint reserveB) internal pure returns (uint amountB) {
-        require(amountA > 0, 'BaseV1Router: INSUFFICIENT_AMOUNT');
-        require(reserveA > 0 && reserveB > 0, 'BaseV1Router: INSUFFICIENT_LIQUIDITY');
+        require(amountA > 0, 'Router: INSUFFICIENT_AMOUNT');
+        require(reserveA > 0 && reserveB > 0, 'Router: INSUFFICIENT_LIQUIDITY');
         amountB = amountA * reserveB / reserveA;
     }
 
@@ -86,7 +86,7 @@ contract Router {
 
     // performs chained getAmountOut calculations on any number of pairs
     function getAmountsOut(uint amountIn, route[] memory routes) public view returns (uint[] memory amounts) {
-        require(routes.length >= 1, 'BaseV1Router: INVALID_PATH');
+        require(routes.length >= 1, 'Router: INVALID_PATH');
         amounts = new uint[](routes.length+1);
         amounts[0] = amountIn;
         for (uint i = 0; i < routes.length; i++) {
@@ -151,7 +151,6 @@ contract Router {
 
         amountA = liquidity * reserveA / _totalSupply; // using balances ensures pro-rata distribution
         amountB = liquidity * reserveB / _totalSupply; // using balances ensures pro-rata distribution
-
     }
 
     function _addLiquidity(
@@ -176,12 +175,12 @@ contract Router {
         } else {
             uint amountBOptimal = quoteLiquidity(amountADesired, reserveA, reserveB);
             if (amountBOptimal <= amountBDesired) {
-                require(amountBOptimal >= amountBMin, 'BaseV1Router: INSUFFICIENT_B_AMOUNT');
+                require(amountBOptimal >= amountBMin, 'Router: INSUFFICIENT_B_AMOUNT');
                 (amountA, amountB) = (amountADesired, amountBOptimal);
             } else {
                 uint amountAOptimal = quoteLiquidity(amountBDesired, reserveB, reserveA);
                 assert(amountAOptimal <= amountADesired);
-                require(amountAOptimal >= amountAMin, 'BaseV1Router: INSUFFICIENT_A_AMOUNT');
+                require(amountAOptimal >= amountAMin, 'Router: INSUFFICIENT_A_AMOUNT');
                 (amountA, amountB) = (amountAOptimal, amountBDesired);
             }
         }
@@ -248,8 +247,8 @@ contract Router {
         (uint amount0, uint amount1) = IPair(pair).burn(to);
         (address token0,) = sortTokens(tokenA, tokenB);
         (amountA, amountB) = tokenA == token0 ? (amount0, amount1) : (amount1, amount0);
-        require(amountA >= amountAMin, 'BaseV1Router: INSUFFICIENT_A_AMOUNT');
-        require(amountB >= amountBMin, 'BaseV1Router: INSUFFICIENT_B_AMOUNT');
+        require(amountA >= amountAMin, 'Router: INSUFFICIENT_A_AMOUNT');
+        require(amountB >= amountBMin, 'Router: INSUFFICIENT_B_AMOUNT');
     }
 
     function removeLiquidityETH(
@@ -340,7 +339,7 @@ contract Router {
         routes[0].to = tokenTo;
         routes[0].stable = stable;
         amounts = getAmountsOut(amountIn, routes);
-        require(amounts[amounts.length - 1] >= amountOutMin, 'BaseV1Router: INSUFFICIENT_OUTPUT_AMOUNT');
+        require(amounts[amounts.length - 1] >= amountOutMin, 'Router: INSUFFICIENT_OUTPUT_AMOUNT');
         _safeTransferFrom(
             routes[0].from, msg.sender, pairFor(routes[0].from, routes[0].to, routes[0].stable), amounts[0]
         );
@@ -355,7 +354,7 @@ contract Router {
         uint deadline
     ) external ensure(deadline) returns (uint[] memory amounts) {
         amounts = getAmountsOut(amountIn, routes);
-        require(amounts[amounts.length - 1] >= amountOutMin, 'BaseV1Router: INSUFFICIENT_OUTPUT_AMOUNT');
+        require(amounts[amounts.length - 1] >= amountOutMin, 'Router: INSUFFICIENT_OUTPUT_AMOUNT');
         _safeTransferFrom(
             routes[0].from, msg.sender, pairFor(routes[0].from, routes[0].to, routes[0].stable), amounts[0]
         );
@@ -368,9 +367,9 @@ contract Router {
     ensure(deadline)
     returns (uint[] memory amounts)
     {
-        require(routes[0].from == address(weth), 'BaseV1Router: INVALID_PATH');
+        require(routes[0].from == address(weth), 'Router: INVALID_PATH');
         amounts = getAmountsOut(msg.value, routes);
-        require(amounts[amounts.length - 1] >= amountOutMin, 'BaseV1Router: INSUFFICIENT_OUTPUT_AMOUNT');
+        require(amounts[amounts.length - 1] >= amountOutMin, 'Router: INSUFFICIENT_OUTPUT_AMOUNT');
         weth.deposit{value: amounts[0]}();
         assert(weth.transfer(pairFor(routes[0].from, routes[0].to, routes[0].stable), amounts[0]));
         _swap(amounts, routes, to);
@@ -381,9 +380,9 @@ contract Router {
     ensure(deadline)
     returns (uint[] memory amounts)
     {
-        require(routes[routes.length - 1].to == address(weth), 'BaseV1Router: INVALID_PATH');
+        require(routes[routes.length - 1].to == address(weth), 'Router: INVALID_PATH');
         amounts = getAmountsOut(amountIn, routes);
-        require(amounts[amounts.length - 1] >= amountOutMin, 'BaseV1Router: INSUFFICIENT_OUTPUT_AMOUNT');
+        require(amounts[amounts.length - 1] >= amountOutMin, 'Router: INSUFFICIENT_OUTPUT_AMOUNT');
         _safeTransferFrom(
             routes[0].from, msg.sender, pairFor(routes[0].from, routes[0].to, routes[0].stable), amounts[0]
         );
@@ -504,7 +503,7 @@ contract Router {
         _swapSupportingFeeOnTransferTokens(routes, to);
         require(
             IERC20(routes[routes.length - 1].to).balanceOf(to).sub(balanceBefore) >= amountOutMin,
-            'BaseV1Router: INSUFFICIENT_OUTPUT_AMOUNT'
+            'Router: INSUFFICIENT_OUTPUT_AMOUNT'
         );
     }
     
@@ -518,7 +517,7 @@ contract Router {
     payable
     ensure(deadline)
     {
-        require(routes[0].from == address(weth), 'BaseV1Router: INVALID_PATH');
+        require(routes[0].from == address(weth), 'Router: INVALID_PATH');
         uint amountIn = msg.value;
         weth.deposit{value: amountIn}();
         assert(weth.transfer(pairFor(routes[0].from, routes[0].to, routes[0].stable), amountIn));
@@ -526,7 +525,7 @@ contract Router {
         _swapSupportingFeeOnTransferTokens(routes, to);
         require(
             IERC20(routes[routes.length - 1].to).balanceOf(to).sub(balanceBefore) >= amountOutMin,
-            'BaseV1Router: INSUFFICIENT_OUTPUT_AMOUNT'
+            'Router: INSUFFICIENT_OUTPUT_AMOUNT'
         );
     }
     
@@ -540,13 +539,13 @@ contract Router {
     external
     ensure(deadline)
     {
-        require(routes[routes.length - 1].to == address(weth), 'BaseV1Router: INVALID_PATH');
+        require(routes[routes.length - 1].to == address(weth), 'Router: INVALID_PATH');
         _safeTransferFrom(
             routes[0].from, msg.sender, pairFor(routes[0].from, routes[0].to, routes[0].stable), amountIn
         );
         _swapSupportingFeeOnTransferTokens(routes, address(this));
         uint amountOut = IERC20(address(weth)).balanceOf(address(this));
-        require(amountOut >= amountOutMin, 'BaseV1Router: INSUFFICIENT_OUTPUT_AMOUNT');
+        require(amountOut >= amountOutMin, 'Router: INSUFFICIENT_OUTPUT_AMOUNT');
         weth.withdraw(amountOut);
         _safeTransferETH(to, amountOut);
     }
