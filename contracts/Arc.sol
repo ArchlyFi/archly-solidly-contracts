@@ -8,6 +8,7 @@ contract Arc is Ownable2Step, Pausable {
 
     string public constant symbol = "Arc";
     string public constant name = "Archly";
+    string constant public version = "2.0.0";
     uint8 public constant decimals = 18;
     uint public totalSupply = 0;
 

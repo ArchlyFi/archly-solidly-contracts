@@ -45,7 +45,7 @@ struct LockedBalance {
     uint end;
 }
 
-contract ve is IERC721, IERC721Metadata {
+contract veArc is IERC721, IERC721Metadata {
     enum DepositType {
         DEPOSIT_FOR_TYPE,
         CREATE_LOCK_TYPE,
@@ -93,7 +93,7 @@ contract ve is IERC721, IERC721Metadata {
 
     string constant public name = "veArc";
     string constant public symbol = "veArc";
-    string constant public version = "1.1.0";
+    string constant public version = "2.0.0";
     uint8 constant public decimals = 18;
 
     /// @dev Current count of token

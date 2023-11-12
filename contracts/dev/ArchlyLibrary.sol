@@ -2,20 +2,20 @@
 
 pragma solidity 0.8.22;
 
-interface archly_pair {
+interface ArchlyPair {
     function metadata() external view returns (uint dec0, uint dec1, uint r0, uint r1, bool st, address t0, address t1);
 }
 
-interface archly_router {
+interface ArchlyRouter {
     function pairFor(address tokenA, address tokenB, bool stable) external view returns (address pair);
 }
 
-contract archly_library {
+contract ArchlyLibrary {
 
-    archly_router internal router = archly_router(0x0000000000000000000000000000000000000000);
+    ArchlyRouter internal router = ArchlyRouter(0x0000000000000000000000000000000000000000);
 
     constructor(address __router) {
-        router = archly_router(__router);
+        router = ArchlyRouter(__router);
     }
 
     function _f(uint x0, uint y) internal pure returns (uint) {
@@ -51,33 +51,33 @@ contract archly_library {
     }
 
     function getTradeDiff(uint amountIn, address tokenIn, address tokenOut, bool stable) external view returns (uint a, uint b) {
-        (uint dec0, uint dec1, uint r0, uint r1, bool st, address t0,) = archly_pair(router.pairFor(tokenIn, tokenOut, stable)).metadata();
+        (uint dec0, uint dec1, uint r0, uint r1, bool st, address t0,) = ArchlyPair(router.pairFor(tokenIn, tokenOut, stable)).metadata();
         uint sample = tokenIn == t0 ? r0*dec1/r1 : r1*dec0/r0;
         a = _getAmountOut(sample, tokenIn, r0, r1, t0, dec0, dec1, st) * 1e18 / sample;
         b = _getAmountOut(amountIn, tokenIn, r0, r1, t0, dec0, dec1, st) * 1e18 / amountIn;
     }
 
     function getTradeDiff(uint amountIn, address tokenIn, address pair) external view returns (uint a, uint b) {
-        (uint dec0, uint dec1, uint r0, uint r1, bool st, address t0,) = archly_pair(pair).metadata();
+        (uint dec0, uint dec1, uint r0, uint r1, bool st, address t0,) = ArchlyPair(pair).metadata();
         uint sample = tokenIn == t0 ? r0*dec1/r1 : r1*dec0/r0;
         a = _getAmountOut(sample, tokenIn, r0, r1, t0, dec0, dec1, st) * 1e18 / sample;
         b = _getAmountOut(amountIn, tokenIn, r0, r1, t0, dec0, dec1, st) * 1e18 / amountIn;
     }
 
     function getSample(address tokenIn, address tokenOut, bool stable) external view returns (uint) {
-        (uint dec0, uint dec1, uint r0, uint r1, bool st, address t0,) = archly_pair(router.pairFor(tokenIn, tokenOut, stable)).metadata();
+        (uint dec0, uint dec1, uint r0, uint r1, bool st, address t0,) = ArchlyPair(router.pairFor(tokenIn, tokenOut, stable)).metadata();
         uint sample = tokenIn == t0 ? r0*dec1/r1 : r1*dec0/r0;
         return _getAmountOut(sample, tokenIn, r0, r1, t0, dec0, dec1, st) * 1e18 / sample;
     }
 
     function getMinimumValue(address tokenIn, address tokenOut, bool stable) external view returns (uint, uint, uint) {
-        (uint dec0, uint dec1, uint r0, uint r1,, address t0,) = archly_pair(router.pairFor(tokenIn, tokenOut, stable)).metadata();
+        (uint dec0, uint dec1, uint r0, uint r1,, address t0,) = ArchlyPair(router.pairFor(tokenIn, tokenOut, stable)).metadata();
         uint sample = tokenIn == t0 ? r0*dec1/r1 : r1*dec0/r0;
         return (sample, r0, r1);
     }
 
     function getAmountOut(uint amountIn, address tokenIn, address tokenOut, bool stable) external view returns (uint) {
-        (uint dec0, uint dec1, uint r0, uint r1, bool st, address t0,) = archly_pair(router.pairFor(tokenIn, tokenOut, stable)).metadata();
+        (uint dec0, uint dec1, uint r0, uint r1, bool st, address t0,) = ArchlyPair(router.pairFor(tokenIn, tokenOut, stable)).metadata();
         return _getAmountOut(amountIn, tokenIn, r0, r1, t0, dec0, dec1, st) * 1e18 / amountIn;
     }
 

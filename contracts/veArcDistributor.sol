@@ -13,7 +13,7 @@ import {IVotingEscrow} from "./interfaces/IVotingEscrow.sol";
 
 */
 
-contract ve_dist {
+contract veArcDistributor {
 
     event CheckpointToken(
         uint time,
