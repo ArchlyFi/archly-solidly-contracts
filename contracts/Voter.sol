@@ -61,6 +61,10 @@ contract Voter {
     event GaugeRevived(address indexed gauge);
     event GaugeNotProcessed(address indexed gauge);
     event GaugeProcessed(address indexed gauge);
+    event ErrorClaimingGaugeRewards(address indexed gauge, address[] tokens);
+    event ErrorClaimingBribeRewards(address indexed bribe, address[] tokens);
+    event ErrorClaimingGaugeFees(address indexed gauge);
+    event ErrorClaimingBribeFees(address indexed bribe, uint tokenId, address[] tokens);
 
     modifier onlyAdmin() {
         require(msg.sender == admin, "Voter: only admin");
@@ -368,7 +372,11 @@ contract Voter {
     // @param _tokens list of  tokens to claim
     function claimRewards(address[] memory _gauges, address[][] memory _tokens) external {
         for (uint i = 0; i < _gauges.length; i++) {
-            IGauge(_gauges[i]).getReward(msg.sender, _tokens[i]);
+            try IGauge(_gauges[i]).getReward(msg.sender, _tokens[i]) {
+                
+            } catch {
+                emit ErrorClaimingGaugeRewards(_gauges[i], _tokens[i]);
+            }
         }
     }
 
@@ -379,7 +387,11 @@ contract Voter {
     function claimBribes(address[] memory _bribes, address[][] memory _tokens, uint _tokenId) external {
         require(IVotingEscrow(_ve).isApprovedOrOwner(msg.sender, _tokenId));
         for (uint i = 0; i < _bribes.length; i++) {
-            IBribe(_bribes[i]).getRewardForOwner(_tokenId, _tokens[i]);
+            try IBribe(_bribes[i]).getRewardForOwner(_tokenId, _tokens[i]) {
+                
+            } catch {
+                emit ErrorClaimingBribeRewards(_bribes[i], _tokens[i]);
+            }
         }
     }
 
@@ -390,7 +402,11 @@ contract Voter {
     function claimFees(address[] memory _fees, address[][] memory _tokens, uint _tokenId) external {
         require(IVotingEscrow(_ve).isApprovedOrOwner(msg.sender, _tokenId));
         for (uint i = 0; i < _fees.length; i++) {
-            IBribe(_fees[i]).getRewardForOwner(_tokenId, _tokens[i]);
+            try IBribe(_fees[i]).getRewardForOwner(_tokenId, _tokens[i]) {
+                
+            } catch {
+                emit ErrorClaimingBribeFees(_fees[i], _tokenId, _tokens[i]);
+            }
         }
     }
 
@@ -398,14 +414,22 @@ contract Voter {
     // @param _gauges the gauges to distribute fees for
     function distributeFees(address[] memory _gauges) external {
         for (uint i = 0; i < _gauges.length; i++) {
-            IGauge(_gauges[i]).claimFees();
+            try IGauge(_gauges[i]).claimFees() {
+                
+            } catch {
+                emit ErrorClaimingGaugeFees(_gauges[i]);
+            }
         }
     }
 
     // @notice distribute earned fees to the bribe contract for all gauges
     function distroFees() external {
         for (uint i = 0; i < allGauges.length; i++) {
-            IGauge(allGauges[i]).claimFees();
+            try IGauge(allGauges[i]).claimFees() {
+                
+            } catch {
+                emit ErrorClaimingGaugeFees(allGauges[i]);
+            }
         }
     }
 
@@ -423,14 +447,10 @@ contract Voter {
     }
 
     function distro() external {
-        distribute(0, allGauges.length);
+        distributeRange(0, allGauges.length);
     }
 
-    function distribute() external {
-        distribute(0, allGauges.length);
-    }
-
-    function distribute(uint start, uint finish) public {
+    function distributeRange(uint start, uint finish) public {
         for (uint x = start; x < finish; x++) {
             try this.distribute(allGauges[x]) {
                 emit GaugeProcessed(allGauges[x]);
@@ -440,7 +460,7 @@ contract Voter {
         }
     }
 
-    function distribute(address[] memory _gauges) external {
+    function distributeGauges(address[] memory _gauges) external {
         for (uint x = 0; x < _gauges.length; x++) {
             try this.distribute(_gauges[x]) {
                 emit GaugeProcessed(allGauges[x]);
