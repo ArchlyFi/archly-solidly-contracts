@@ -303,7 +303,7 @@ contract Gauge {
             userRewardPerTokenStored[tokens[i]][account] = rewardPerTokenStored[tokens[i]];
             if (_reward > 0) _safeTransfer(tokens[i], account, _reward);
 
-            emit ClaimRewards(msg.sender, tokens[i], _reward);
+            emit ClaimRewards(account, tokens[i], _reward);
         }
 
         uint _derivedBalance = derivedBalances[account];
