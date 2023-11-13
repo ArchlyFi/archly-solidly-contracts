@@ -31,8 +31,8 @@ contract PairFactory {
         pauser = msg.sender;
         isPaused = false;
         feeManager = msg.sender;
-        stableFee = 50; // 0.5%, Base: 10000
-        volatileFee = 100; // 1%, Base: 10000
+        stableFee = 5; // 0.05%, Base: 10000
+        volatileFee = 30; // 0.30%, Base: 10000
     }
 
     function allPairsLength() external view returns (uint) {

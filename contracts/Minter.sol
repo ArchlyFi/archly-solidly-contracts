@@ -141,7 +141,7 @@ contract Minter {
 
     // calculate inflation and adjust ve balances accordingly
     function calculate_growth(uint _minted) public view returns (uint) {
-        return rebaseRate * (_ve.totalSupply() * _minted / (_token.totalSupply() - excluded_circulating_supply())) / 1000;
+        return rebaseRate * (_ve.totalSupply() * _minted / (_token.totalSupply() - excluded_circulating_supply())) / MAX_REBASE_RATE;
     }
 
     // update period can only be called once per cycle (1 week)

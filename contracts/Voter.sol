@@ -59,6 +59,8 @@ contract Voter {
     event Delisted(address indexed delister, address indexed token);
     event GaugeKilled(address indexed gauge);
     event GaugeRevived(address indexed gauge);
+    event GaugeNotProcessed(address indexed gauge);
+    event GaugeProcessed(address indexed gauge);
 
     modifier onlyAdmin() {
         require(msg.sender == admin, "Voter: only admin");
@@ -430,13 +432,21 @@ contract Voter {
 
     function distribute(uint start, uint finish) public {
         for (uint x = start; x < finish; x++) {
-            distribute(allGauges[x]);
+            try this.distribute(allGauges[x]) {
+                emit GaugeProcessed(allGauges[x]);
+            } catch {
+                emit GaugeNotProcessed(allGauges[x]);
+            }
         }
     }
 
     function distribute(address[] memory _gauges) external {
         for (uint x = 0; x < _gauges.length; x++) {
-            distribute(_gauges[x]);
+            try this.distribute(_gauges[x]) {
+                emit GaugeProcessed(allGauges[x]);
+            } catch {
+                emit GaugeNotProcessed(allGauges[x]);
+            }
         }
     }
 
@@ -451,7 +461,6 @@ contract Voter {
     function _nextPeriod() internal view returns(uint nextPeriod) {
         nextPeriod = (block.timestamp + DURATION) / DURATION * DURATION;
     }
-
 
     function _safeTransferFrom(address token, address from, address to, uint256 value) internal {
         require(token.code.length > 0);
