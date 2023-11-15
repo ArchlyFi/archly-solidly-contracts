@@ -11,7 +11,8 @@ interface IVoter {
     function _ve() external view returns (address);
     function createGauge(address _pair) external returns (address);
     function factory() external view returns (address);
-    function listing_fee() external view returns (uint);
+    function whitelistingFee() external view returns (uint256);
+    function setWhitelistingFee(uint256 _fee) external;
     function whitelist(address _token) external;
     function isWhitelisted(address _token) external view returns (bool);
     function delist(address _token) external;
@@ -36,6 +37,7 @@ interface IVoter {
     function initialize(address[] memory _tokens, address _minter) external;
     function minter() external view returns (address);
     function admin() external view returns (address);
+    function feeManagers(address feeManager) external view returns (bool);
     function claimRewards(address[] memory _gauges, address[][] memory _tokens) external;
     function isReward(address gauge, address token) external view returns (bool);
     function isBribe(address bribe, address token) external view returns (bool);
@@ -46,8 +48,7 @@ interface IVoter {
     function reviveGauge(address _gauge) external;
     function distroFees() external;
     function distro() external;
-    function distribute() external;
     function distribute(address _gauge) external;
-    function distribute(uint start, uint finish) external;
-    function distribute(address[] memory _gauges) external;
+    function distributeRange(uint start, uint finish) external;
+    function distributeGauges(address[] memory _gauges) external;
 }
