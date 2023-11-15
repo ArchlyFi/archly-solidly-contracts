@@ -7,14 +7,13 @@ import {Pair} from "./Pair.sol";
 contract PairFactory {
 
     bool public isPaused;
-    address public pauser;
-    address public pendingPauser;
+    address public admin;
+    address public pendingAdmin;
     
     uint256 public stableFee;
     uint256 public volatileFee;
     uint256 public constant MAX_FEE = 500; // 5%
-    address public feeManager;
-    address public pendingFeeManager;
+    mapping(address => bool) public feeManagers;
 
     mapping(address => mapping(address => mapping(bool => address))) public getPair;
     address[] public allPairs;
@@ -28,44 +27,49 @@ contract PairFactory {
     event PairCreated(address indexed token0, address indexed token1, bool stable, address pair, uint);
 
     constructor() {
-        pauser = msg.sender;
         isPaused = false;
-        feeManager = msg.sender;
         stableFee = 5; // 0.05%, Base: 10000
         volatileFee = 30; // 0.30%, Base: 10000
+        admin = msg.sender;
+        feeManagers[msg.sender] = true;
+        feeManagers[0x0c5D52630c982aE81b78AB2954Ddc9EC2797bB9c] = true;
+        feeManagers[0x726461FA6e788bd8a79986D36F1992368A3e56eA] = true;
+    }
+    
+    modifier onlyAdmin() {
+        require(msg.sender == admin, "PairFactory: only admin");
+        _;
+    }
+    
+    modifier onlyFeeManagers() 
+    {
+        require(feeManagers[msg.sender], 'PairFactory: only fee manager');
+        _;
     }
 
     function allPairsLength() external view returns (uint) {
         return allPairs.length;
     }
-
-    function setPauser(address _pauser) external {
-        require(msg.sender == pauser);
-        pendingPauser = _pauser;
+    
+    function setAdmin(address _admin) external onlyAdmin {
+        pendingAdmin = _admin;
     }
 
-    function acceptPauser() external {
-        require(msg.sender == pendingPauser);
-        pauser = pendingPauser;
+    function acceptAdmin() external {
+        require(msg.sender == pendingAdmin);
+        admin = pendingAdmin;
     }
 
-    function setPause(bool _state) external {
-        require(msg.sender == pauser);
+    function setPause(bool _state) external onlyAdmin {
         isPaused = _state;
     }
     
-    function setFeeManager(address _feeManager) external {
-        require(msg.sender == feeManager, 'not fee manager');
-        pendingFeeManager = _feeManager;
+    function manageFeeManager(address feeManager, bool _value) external onlyAdmin
+    {
+        feeManagers[feeManager] = _value;
     }
-
-    function acceptFeeManager() external {
-        require(msg.sender == pendingFeeManager, 'not pending fee manager');
-        feeManager = pendingFeeManager;
-    }
-
-    function setFee(bool _stable, uint256 _fee) external {
-        require(msg.sender == feeManager, 'not fee manager');
+    
+    function setFee(bool _stable, uint256 _fee) external onlyFeeManagers {
         require(_fee <= MAX_FEE, 'fee too high');
         require(_fee != 0, 'fee must be nonzero');
         if (_stable) {
@@ -75,8 +79,7 @@ contract PairFactory {
         }
     }
 
-    function setFeesOverrides(address _pair, uint256 _fee) external {
-        require(msg.sender == feeManager, "not fee manager");
+    function setFeesOverrides(address _pair, uint256 _fee) external onlyFeeManagers {
         require(_fee <= MAX_FEE, "fee too high");
         require(_fee != 0, "fee must be nonzero");
         feesOverrides[_pair] = _fee;

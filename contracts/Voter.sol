@@ -22,6 +22,8 @@ contract Voter {
     uint internal constant DURATION = 7 days; // rewards are released over 7 days
     address public minter;
     address public admin;
+    address public pendingAdmin;
+    uint256 public whitelistingFee;
     bool public permissionMode;
 
     uint public totalWeight; // total voting weight
@@ -36,6 +38,7 @@ contract Voter {
     mapping(uint => uint) public usedWeights;  // nft => total voting weight of user
     mapping(address => bool) public isGauge;
     mapping(address => bool) public isLive; // gauge => status (live or not)
+    mapping(address => bool) public feeManagers;
 
     mapping(address => bool) public isWhitelisted;
     mapping(address => mapping(address => bool)) public isReward;
@@ -71,6 +74,13 @@ contract Voter {
         _;
     }
     
+    /// @dev Only calls from the enabled fee managers are accepted.
+    modifier onlyFeeManagers() 
+    {
+        require(feeManagers[msg.sender], 'Voter: only fee manager');
+        _;
+    }
+    
     modifier checkPermissionMode() {
         if(permissionMode) {
             require(msg.sender == admin, "Permission Mode Is Active");
@@ -94,6 +104,11 @@ contract Voter {
         minter = msg.sender;
         admin = msg.sender;
         permissionMode = false;
+        whitelistingFee = 625000e18;
+        
+        feeManagers[msg.sender] = true;
+        feeManagers[0x0c5D52630c982aE81b78AB2954Ddc9EC2797bB9c] = true;
+        feeManagers[0x726461FA6e788bd8a79986D36F1992368A3e56eA] = true;
     }
 
     // simple re-entrancy check
@@ -115,8 +130,12 @@ contract Voter {
     }
 
     function setAdmin(address _admin) external onlyAdmin {
-        require(_admin != address(0), "zero address");
-        admin = _admin;
+        pendingAdmin = _admin;
+    }
+
+    function acceptAdmin() external {
+        require(msg.sender == pendingAdmin);
+        admin = pendingAdmin;
     }
     
     function enablePermissionMode() external onlyAdmin {
@@ -128,6 +147,11 @@ contract Voter {
         require(permissionMode, "Permission Mode Disabled");
         permissionMode = false;
     }
+    
+    function manageFeeManager(address feeManager, bool _value) external onlyAdmin
+    {
+        feeManagers[feeManager] = _value;
+    }
 
     function setReward(address _gauge, address _token, bool _status) external onlyAdmin {
         isReward[_gauge][_token] = _status;
@@ -135,6 +159,11 @@ contract Voter {
 
     function setBribe(address _bribe, address _token, bool _status) external onlyAdmin {
         isBribe[_bribe][_token] = _status;
+    }
+    
+    function setWhitelistingFee(uint256 _fee) external onlyFeeManagers {
+        require(_fee > 0, 'Fee must be greater than zero');
+        whitelistingFee = _fee;
     }
 
     function killGauge(address _gauge) external onlyAdmin {
@@ -149,10 +178,6 @@ contract Voter {
         require(!isLive[_gauge], "gauge is live");
         isLive[_gauge] = true;
         emit GaugeRevived(_gauge);
-    }
-
-    function listing_fee() public view returns (uint) {
-        return (IERC20(base).totalSupply() - IERC20(_ve).totalSupply()) / 200;
     }
 
     function reset(uint _tokenId) external {
@@ -248,7 +273,7 @@ contract Voter {
 
     function whitelist(address _token) public checkPermissionMode {
         if(msg.sender != admin) {
-            _safeTransferFrom(base, msg.sender, address(0), listing_fee());
+            _safeTransferFrom(base, msg.sender, address(0), whitelistingFee);
         }
 
         _whitelist(_token);
