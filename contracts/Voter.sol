@@ -272,11 +272,14 @@ contract Voter {
     }
 
     function whitelist(address _token) public checkPermissionMode {
-        if(msg.sender != admin) {
-            _safeTransferFrom(base, msg.sender, address(0), whitelistingFee);
-        }
-
+        _safeTransferFrom(base, msg.sender, address(0), whitelistingFee);
         _whitelist(_token);
+    }
+    
+    function whitelistBatch(address[] memory _tokens) external onlyAdmin {
+        for (uint i = 0; i < _tokens.length; i++) {
+            _whitelist(_tokens[i]);
+        }
     }
 
     function _whitelist(address _token) internal {
