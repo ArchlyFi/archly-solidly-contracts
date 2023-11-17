@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.22;
 
-import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import {Ownable2Step} from "@openzeppelin/contracts/access/Ownable2Step.sol";
 import {Pausable} from "@openzeppelin/contracts/security/Pausable.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IArc} from "./interfaces/IArc.sol";
 import {IERC721Receiver} from "./interfaces/IERC721Receiver.sol";
 import {IVotingEscrow} from "./interfaces/IVotingEscrow.sol";
@@ -38,6 +39,17 @@ contract ArcMigrator is Ownable2Step, Pausable, ReentrancyGuard, IERC721Receiver
     function unpause() public onlyOwner
     {
         _unpause();
+    }
+    
+    function withdrawNative(address beneficiary) public onlyOwner {
+        uint256 amount = address(this).balance;
+        (bool sent, ) = beneficiary.call{value: amount}("");
+        require(sent, 'Unable to withdraw');
+    }
+
+    function withdrawToken(address beneficiary, address token) public onlyOwner {
+        uint256 amount = IERC20(token).balanceOf(address(this));
+        IERC20(token).transfer(beneficiary, amount);
     }
     
     function migrateArc() external nonReentrant whenNotPaused {
