@@ -76,6 +76,7 @@ contract veArc is IERC721, IERC721Metadata {
     mapping(uint => LockedBalance) public locked;
     
     address public admin;
+    address public pendingAdmin;
     address public artProxy;
 
     mapping(uint => uint) public ownership_change;
@@ -914,13 +915,21 @@ contract veArc is IERC721, IERC721Metadata {
         }
     }
     
-    function setAdmin(address _admin) external {
-        require(msg.sender == admin);
-        admin = _admin;
+    modifier onlyAdmin() {
+        require(msg.sender == admin, "veArc: only admin");
+        _;
     }
     
-    function setArtProxy(address _proxy) external {
-        require(msg.sender == admin);
+    function setAdmin(address _admin) external onlyAdmin {
+        pendingAdmin = _admin;
+    }
+
+    function acceptAdmin() external {
+        require(msg.sender == pendingAdmin);
+        admin = pendingAdmin;
+    }
+    
+    function setArtProxy(address _proxy) external onlyAdmin {
         artProxy = _proxy;
     }
 
