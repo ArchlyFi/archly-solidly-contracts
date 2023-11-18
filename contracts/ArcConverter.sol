@@ -9,7 +9,7 @@ import {IArc} from "./interfaces/IArc.sol";
 import {IERC721Receiver} from "./interfaces/IERC721Receiver.sol";
 import {IVotingEscrow} from "./interfaces/IVotingEscrow.sol";
 
-contract ArcMigrator is Ownable2Step, Pausable, ReentrancyGuard, IERC721Receiver {
+contract ArcConverter is Ownable2Step, Pausable, ReentrancyGuard, IERC721Receiver {
     
     IArc fromArc;
     IVotingEscrow fromVeArc;
@@ -17,8 +17,9 @@ contract ArcMigrator is Ownable2Step, Pausable, ReentrancyGuard, IERC721Receiver
     IArc toArc;
     IVotingEscrow toVeArc;
     
-    event ArcMigrated(address indexed account, uint amount);
-    event VeArcMigrated(address indexed account, uint fromTokenId, uint toTokenId, uint amount, uint fromLockEnd, uint toLockEnd);
+    event ArcConverted(address indexed account, uint amount);
+    event VeArcConverted(address indexed account, uint fromTokenId, uint toTokenId, uint amount, uint fromLockEnd, uint toLockEnd);
+    event VeArcNotConverted(uint tokenId);
     event VeArcReceived(address indexed operator, address indexed from, uint tokenId, bytes data);
     
     constructor(address _fromArc, address _fromVeArc, address _toArc, address _toVeArc) {
@@ -52,16 +53,16 @@ contract ArcMigrator is Ownable2Step, Pausable, ReentrancyGuard, IERC721Receiver
         IERC20(token).transfer(beneficiary, amount);
     }
     
-    function migrateArc() external nonReentrant whenNotPaused {
+    function convertArc() external nonReentrant whenNotPaused {
         uint balance = fromArc.balanceOf(msg.sender);
         fromArc.transferFrom(msg.sender, address(this), balance);
         fromArc.burn(balance);
         
         toArc.mint(msg.sender, balance);
-        emit ArcMigrated(msg.sender, balance);
+        emit ArcConverted(msg.sender, balance);
     }
     
-    function migrateVeArc(uint tokenId) external nonReentrant whenNotPaused {
+    function convertVeArc(uint tokenId) external nonReentrant whenNotPaused {
         uint lockedAmount = fromVeArc.locked__amount(tokenId);
         uint lockedEnd = fromVeArc.locked__end(tokenId);
         fromVeArc.safeTransferFrom(msg.sender, address(this), tokenId);
@@ -73,7 +74,17 @@ contract ArcMigrator is Ownable2Step, Pausable, ReentrancyGuard, IERC721Receiver
         toArc.mint(address(this), lockedAmount);
         toArc.approve(address(toVeArc), lockedAmount);
         uint newTokenId = toVeArc.create_lock_for(lockedAmount, newLockDuration, msg.sender);
-        emit VeArcMigrated(msg.sender, tokenId, newTokenId, lockedAmount, lockedEnd, newLockDuration + blockTimestamp);
+        emit VeArcConverted(msg.sender, tokenId, newTokenId, lockedAmount, lockedEnd, newLockDuration + blockTimestamp);
+    }
+    
+    function convertVeArcBatch(uint[] calldata tokenIds) external nonReentrant whenNotPaused {
+        for (uint x = 0; x < tokenIds.length; x++) {
+            try this.convertVeArc(tokenIds[x]) {
+                
+            } catch {
+                emit VeArcNotConverted(tokenIds[x]);
+            }
+        }
     }
     
     function onERC721Received(address operator, address from, uint tokenId, bytes calldata data) external returns (bytes4) {
