@@ -141,6 +141,8 @@ function vote(address[] calldata _poolVote, uint[] calldata _weights) external
 function distribute(address token) external
 ```
 
+## DEX v1 Contract Addresses
+
 ### Arbitrum One
 
 | Name | Address |
@@ -208,23 +210,20 @@ function distribute(address token) external
 | BaseV1Voter | [0xd9742c670eEE8001d965964E05793c42c588B657](https://www.teloscan.io/address/0xd9742c670eEE8001d965964E05793c42c588B657#contract) |
 | BaseV1Minter | [0xdB6db572DA4be59656f87Ee5711D8334e1f9b0E9](https://www.teloscan.io/address/0xdB6db572DA4be59656f87Ee5711D8334e1f9b0E9#contract) |
 
-### Telos Testnet
+## DEX v2 Contract Addresses
 
 | Name | Address |
 | :--- | :--- |
-| wTLOS| [0xae85bf723a9e74d6c663dd226996ac1b8d075aa9](https://testnet.teloscan.io/address/0xae85bf723a9e74d6c663dd226996ac1b8d075aa9#code) |
-| Arc | [0x6a921C4b3f4Dfb4bD278EBA5978B0381b74ea8fa](https://testnet.teloscan.io/address/0x6a921C4b3f4Dfb4bD278EBA5978B0381b74ea8fa#contract) |
-| veArc | [0x3EBfCEF3F3C0268Fa9AfB14CD461E2CC11ce0640](https://testnet.teloscan.io/address/0x3EBfCEF3F3C0268Fa9AfB14CD461E2CC11ce0640#contract) |
-| veArc-dist | [0x4b71F90c5d1968c21D3dc70A59268908A20A24Ef](https://testnet.teloscan.io/address/0x4b71F90c5d1968c21D3dc70A59268908A20A24Ef#contract) |
-| BaseV1Factory | [0xCEE3e7189913335D83c41aDfC3089B2B17a6a740](https://testnet.teloscan.io/address/0xCEE3e7189913335D83c41aDfC3089B2B17a6a740#contract) |
-| BaseV1Router01 | [0x45A27E9Dc65143Eb0aa2249D4a1B1c5464373e29](https://testnet.teloscan.io/address/0x45A27E9Dc65143Eb0aa2249D4a1B1c5464373e29#contract) |
-| BaseV1Router02 | [0xE47869580332e48bDBC97eA2D92B5c8dAc50A43D](https://testnet.teloscan.io/address/0xE47869580332e48bDBC97eA2D92B5c8dAc50A43D#contract) |
-| BaseV1GaugeFactory | [0x0eDc4d37F3A8B30065Ceede737C60e315A95f56e](https://testnet.teloscan.io/address/0x0eDc4d37F3A8B30065Ceede737C60e315A95f56e#contract) |
-| BaseV1BribeFactory | [0x538a55F9d2e1D128B378A6Ff822F073cb86111f1](https://testnet.teloscan.io/address/0x538a55F9d2e1D128B378A6Ff822F073cb86111f1#contract) |
-| BaseV1BribeV2Factory | [0x2527F718D7F7032FF8632a817AD1725919BF6939](https://testnet.teloscan.io/address/0x2527F718D7F7032FF8632a817AD1725919BF6939#contract) |
-| BaseV1BribeV2Factory (2.1) | [0xA32611B4e41e9fF066aC1A72CD8a7F8aeC1072E9](https://testnet.teloscan.io/address/0xA32611B4e41e9fF066aC1A72CD8a7F8aeC1072E9#contract) |
-| BaseV1Voter | [0xf6339700bb26638923dbDF7527Fe125cEae3AE70](https://testnet.teloscan.io/address/0xf6339700bb26638923dbDF7527Fe125cEae3AE70#contract) |
-| BaseV1Minter | [0xc310e3d746DE609a06dB2a51eAAD58Ecd00dc84c](https://testnet.teloscan.io/address/0xc310e3d746DE609a06dB2a51eAAD58Ecd00dc84c#contract) |
+| Arc | 0xe8876189A80B2079D8C0a7867e46c50361D972c1 |
+| VeArc | 0x6ACa098fa93DAD7A872F6dcb989F8b4A3aFC3342 |
+| VeArcDistributor | 0x0361a173dC338c32E57079b2c51cEf36f8A982f1 |
+| PairFactory | 0x12508dd9108Abab2c5fD8fC6E4984E46a3CF7824 |
+| Router | 0xE8E2b714C57937E0b29c6ABEAF00B52388cAb598 |
+| GaugeFactory | 0xb33F66f27d8D8282AC1f55F98cd83503e90128e9 |
+| BribeFactory | 0xc8c5172879f0b7E88cc03ca20835dbE9e283386e |
+| Voter | 0x0B1481fE6Fd74a6449064163604d712DFf9bc6DD |
+| Minter | 0x14EAfc4ceB334d4f913204647708aBAD1ceF0854 |
+| ArcConverter | 0x45D01F53D31190BB6a1e23de776ad894Cf9F48d8 |
 
 ## Security
 

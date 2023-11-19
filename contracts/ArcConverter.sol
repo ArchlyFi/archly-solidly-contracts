@@ -11,11 +11,11 @@ import {IVotingEscrow} from "./interfaces/IVotingEscrow.sol";
 
 contract ArcConverter is Ownable2Step, Pausable, ReentrancyGuard, IERC721Receiver {
     
-    IArc fromArc;
-    IVotingEscrow fromVeArc;
+    IArc public fromArc;
+    IVotingEscrow public fromVeArc;
     
-    IArc toArc;
-    IVotingEscrow toVeArc;
+    IArc public toArc;
+    IVotingEscrow public toVeArc;
     
     event ArcConverted(address indexed account, uint amount);
     event VeArcConverted(address indexed account, uint fromTokenId, uint toTokenId, uint amount, uint fromLockEnd, uint toLockEnd);
@@ -62,10 +62,13 @@ contract ArcConverter is Ownable2Step, Pausable, ReentrancyGuard, IERC721Receive
         emit ArcConverted(msg.sender, balance);
     }
     
-    function convertVeArc(uint tokenId) external nonReentrant whenNotPaused {
+    function _convertVeArc(address account, uint tokenId) public whenNotPaused {
+        require(msg.sender == address(this), 'Invalid Caller');
+        require(account != address(0), 'Account cannot be zero address');
+        
         uint lockedAmount = fromVeArc.locked__amount(tokenId);
         uint lockedEnd = fromVeArc.locked__end(tokenId);
-        fromVeArc.safeTransferFrom(msg.sender, address(this), tokenId);
+        fromVeArc.safeTransferFrom(account, address(this), tokenId);
         fromVeArc.burn(tokenId);
         
         uint blockTimestamp = block.timestamp;
@@ -73,13 +76,17 @@ contract ArcConverter is Ownable2Step, Pausable, ReentrancyGuard, IERC721Receive
         
         toArc.mint(address(this), lockedAmount);
         toArc.approve(address(toVeArc), lockedAmount);
-        uint newTokenId = toVeArc.create_lock_for(lockedAmount, newLockDuration, msg.sender);
-        emit VeArcConverted(msg.sender, tokenId, newTokenId, lockedAmount, lockedEnd, newLockDuration + blockTimestamp);
+        uint newTokenId = toVeArc.create_lock_for(lockedAmount, newLockDuration, account);
+        emit VeArcConverted(account, tokenId, newTokenId, lockedAmount, lockedEnd, newLockDuration + blockTimestamp);
+    }
+    
+    function convertVeArc(uint tokenId) external nonReentrant whenNotPaused {
+        this._convertVeArc(msg.sender, tokenId);
     }
     
     function convertVeArcBatch(uint[] calldata tokenIds) external nonReentrant whenNotPaused {
         for (uint x = 0; x < tokenIds.length; x++) {
-            try this.convertVeArc(tokenIds[x]) {
+            try this._convertVeArc(msg.sender, tokenIds[x]) {
                 
             } catch {
                 emit VeArcNotConverted(tokenIds[x]);
