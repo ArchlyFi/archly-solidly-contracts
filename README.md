@@ -212,6 +212,8 @@ function distribute(address token) external
 
 ## DEX v2 Contract Addresses
 
+### (All Chains except zkSync Era)
+
 | Name | Address |
 | :--- | :--- |
 | Arc | 0xe8876189A80B2079D8C0a7867e46c50361D972c1 |
@@ -223,7 +225,20 @@ function distribute(address token) external
 | BribeFactory | 0xc8c5172879f0b7E88cc03ca20835dbE9e283386e |
 | Voter | 0x0B1481fE6Fd74a6449064163604d712DFf9bc6DD |
 | Minter | 0x14EAfc4ceB334d4f913204647708aBAD1ceF0854 |
-| ArcConverter | 0x45D01F53D31190BB6a1e23de776ad894Cf9F48d8 |
+
+### (zkSync Era)
+
+| Name | Address |
+| :--- | :--- |
+| Arc | 0xfB4c64c144c2bD0E7F2A06da7d6aAc32d8cb2514 |
+| VeArc | 0x483BdBdbf60d9650845c8097E002c2241D92ab45 |
+| VeArcDistributor | 0x51FacD6bFb361920A949e942CAec12dde9AaCd5a |
+| PairFactory | 0x30A0DD3D0D9E99BD0E67b323FB706788766dCff2 |
+| Router | 0x2980aa5bD6980B6506682c56b3D3d34D13D98E6D |
+| GaugeFactory | 0x15E21A438853AFa27EBB53710bfe0f3Cfcb6Abd6 |
+| BribeFactory | 0x8583c59b3acA38A72D84FB75fd05D520B57163f4 |
+| Voter | 0x5cD247e2591E33a6C8F636F169089B43988d8a18 |
+| Minter | 0xc37b9A8deB9B33507f44B04CF94B04170900cC57 |
 
 ## Security
 

@@ -8,7 +8,9 @@ tasks
 
 #Hardhat files
 cache
+cache-zk
 artifacts
+artifacts-zk
 hardhat.config.js
 hardhat.config.ts
 .DS_Store
